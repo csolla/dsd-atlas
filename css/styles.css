@@ -579,6 +579,7 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .privacy-field { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px 12px; display: grid; gap: 6px; }
 .privacy-field legend { padding: 0 4px; font-weight: 600; }
 .private-picks { display: grid; gap: 6px; margin-top: 4px; }
+.private-picks[hidden] { display: none; }
 .pick-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .pick-chips:empty { display: none; }
 .access-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13.5px; }

@@ -118,8 +118,7 @@ export function renderDesignSystem(el) {
         <span class="filter-chip">Planning Center <button type="button" class="icon-btn" aria-label="Remove Planning Center">×</button></span>
       </div>
       <div class="access-line"><span class="access-label"><span aria-hidden="true">🔒</span> Who can see it</span>
-        <span class="access-group"><span class="access-label">Departments</span> <span class="summary-chip">Delight</span> <span class="summary-chip">Planning Center</span></span>
-        <span class="muted small">plus its owner and Admins</span></div>
+        <span class="access-group"><span class="access-label">Departments</span> <span class="summary-chip">Delight</span> <span class="summary-chip">Planning Center</span></span></div>
       <p class="ds-gap"><span class="private-flag"><span aria-hidden="true">🔒</span> Private</span></p>`)}
 
     ${section('tags', 'Tags, statuses and chips', 'Small labels that carry a category or state. Colour always comes with a word or an icon, never alone.', [

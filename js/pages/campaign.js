@@ -511,5 +511,5 @@ function accessLine(access) {
     people.length && `<span class="access-group"><span class="access-label">People</span> ${chips(people)}</span>`,
   ].filter(Boolean);
   return `<div class="access-line"><span class="access-label"><span aria-hidden="true">🔒</span> Who can see it</span>
-    ${parts.join('')}<span class="muted small">${parts.length ? 'plus' : 'Only'} its owner and Admins</span></div>`;
+    ${parts.length ? parts.join('') : '<span class="muted small">Nobody added yet</span>'}</div>`;
 }
