@@ -11,6 +11,7 @@ import {
 import {
   BUSINESS_UNITS, FOR_BOTH, departmentById, departmentByKey, isMarketing, unitLine,
 } from '../departments.js';
+import { loadAccess, saveAccess, canManageAccess, accessSummary } from '../access.js';
 
 // Kept between visits so the list looks the same when coming back to it
 const filters = { search: '', dept: '', bu: '', owner: '', view: 'active', mine: false, sort: 'start', dir: 'desc' };
@@ -204,6 +205,7 @@ function drawList(list, data, draw) {
                 <td data-label="Project">
                   <a class="row-link campaign-link" href="#/campaigns/${esc(c.id)}">${esc(c.name)}</a>
                   ${unitLine(c)}
+                  ${c.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
                   ${endedFlag(c)}
                 </td>
                 <td data-label="Owner">${owner ? `<span class="person">${avatar(owner, 24)}${esc(owner.name)}</span>` : '<span class="muted">—</span>'}</td>
@@ -293,6 +295,26 @@ export async function openCampaignForm(campaign, onSaved) {
   const sharedSplit = Number(settings.shared_split_education ?? 70);
   const departments = Object.fromEntries(state.departments.map(d => [d.id, d.name]));
   const owners = state.people.filter(p => (p.active && p.role !== 'director') || p.id === c.owner_id);
+  // Who can see it: only the owner, the creator or an Admin changes it
+  const manage = canManageAccess(campaign);
+  const before = campaign?.private ? await loadAccess(campaign.id).catch(() => []) : [];
+  const picked = new Set(before.map(a => a.person_id || a.department_id));
+  const checkbox = (name, id, label) =>
+    `<label class="pick"><input type="checkbox" name="${name}" value="${esc(id)}" ${picked.has(id) ? 'checked' : ''}> ${esc(label)}</label>`;
+  const privacy = manage ? `
+      <fieldset class="field privacy-field">
+        <legend>Who can see it</legend>
+        <label class="toggle"><input type="radio" name="visibility" value="everyone" ${c.private ? '' : 'checked'}> Everyone at DSD</label>
+        <label class="toggle"><input type="radio" name="visibility" value="private" ${c.private ? 'checked' : ''}> Only the departments and people I choose</label>
+        <div class="private-picks" data-private-picks ${c.private ? '' : 'hidden'}>
+          <p class="muted small">Its owner and Admins always see it. Nobody else sees its tasks, comments or files.</p>
+          <span class="pick-label">Departments</span>
+          <div class="pick-list">${state.departments.map(d => checkbox('access_dept', d.id, d.name)).join('')}</div>
+          <span class="pick-label">People</span>
+          <div class="pick-list">${state.people.filter(p => p.active).map(p => checkbox('access_person', p.id, p.name)).join('')}</div>
+        </div>
+      </fieldset>`
+    : c.private ? `<p class="muted small form-note">🔒 Private: seen by ${esc(accessSummary(before))}, its owner and Admins. Only its owner or an Admin can change this.</p>` : '';
 
   const dialog = formDialog({
     title: campaign ? 'Edit project' : 'New project',
@@ -325,7 +347,8 @@ export async function openCampaignForm(campaign, onSaved) {
           </select></label>
         <label class="field"><span>Planned hours</span>
           <input type="number" name="planned_hours" min="0" step="0.5" value="${esc(c.planned_hours ?? 0)}"></label>
-      </div>`,
+      </div>
+      ${privacy}`,
     onSubmit: async form => {
       const f = Object.fromEntries(new FormData(form));
       const values = {
@@ -339,6 +362,11 @@ export async function openCampaignForm(campaign, onSaved) {
         owner_id: f.owner_id || null,
         planned_hours: f.planned_hours === '' ? 0 : Number(f.planned_hours),
       };
+      if (manage) values.private = f.visibility === 'private';
+      const access = {
+        departmentIds: values.private ? [...form.querySelectorAll('[name=access_dept]:checked')].map(i => i.value) : [],
+        personIds: values.private ? [...form.querySelectorAll('[name=access_person]:checked')].map(i => i.value) : [],
+      };
 
       if (!values.name) return 'Give the project a name.';
       if (!values.department_id) return 'Choose the department this project belongs to.';
@@ -351,6 +379,13 @@ export async function openCampaignForm(campaign, onSaved) {
         : supabase.from('campaigns').insert(values);
       const { data, error } = await query.select().single();
       if (error) return errorMessage(error);
+      if (manage && (values.private || before.length)) {
+        try {
+          await saveAccess(data.id, before, access);
+        } catch (accessError) {
+          return `The project was saved, but who can see it wasn't: ${errorMessage(accessError)}`;
+        }
+      }
 
       toast(campaign ? 'Project updated' : 'Project created');
       onSaved?.(data);
@@ -367,6 +402,9 @@ export async function openCampaignForm(campaign, onSaved) {
       ? 'Marketing hours for Education count against its budget; for Planning Center or Delight, against the Planning Center budget; for both, they are split. Hours for any other department count against neither.'
       : 'Who the work is for. Leave it as the own department unless the work is for another team.';
   };
+  dialog.querySelectorAll('[name=visibility]').forEach(radio => radio.addEventListener('change', () => {
+    dialog.querySelector('[data-private-picks]').hidden = dialog.querySelector('[name=visibility]:checked').value !== 'private';
+  }));
   deptSelect.addEventListener('change', () => {
     const choices = forChoices(deptSelect.value, sharedSplit);
     const keep = forSelect.value in choices ? forSelect.value

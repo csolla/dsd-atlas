@@ -6,6 +6,8 @@ import { loadTasksHours } from '../time.js';
 import { startTimer } from '../timer.js';
 import { esc, options, fmtHours, toast, errorMessage, confirmDialog, TASK_STATUSES } from '../ui.js';
 import { forTag } from '../departments.js';
+import { loadAccess, projectAudience } from '../access.js';
+import { setMentionAudience } from '../comments.js';
 import { openTimeEntryForm } from './time-entry-form.js';
 import { mountAttachments, mountComments } from './task-discussion.js';
 
@@ -41,7 +43,7 @@ export async function openTaskPanel(taskId, { highlight = null } = {}) {
   if (current !== mine) return;
   if (!data) {
     closeTaskPanel();
-    toast('That task no longer exists.', 'error');
+    toast("That task doesn't exist, or it's in a private project you can't see.", 'error');
     return;
   }
   // Subtasks open in their parent task's panel
@@ -51,6 +53,7 @@ export async function openTaskPanel(taskId, { highlight = null } = {}) {
   }
 
   Object.assign(current, data);
+  setMentionAudience(projectAudience(data.task.campaign, data.access));
   render();
   onTasksChanged(panel, refresh, { delay: 300 });
   onLiveChange(panel, 'time-changed', loadHours, { delay: 300 });
@@ -61,6 +64,7 @@ export function closeTaskPanel() {
   if (!current) return;
   const { panel, backdrop } = current;
   current = null;
+  setMentionAudience(null);
   // Opened from a task link: go back to the campaign's own address (no reload)
   if (/^#\/campaigns\/[0-9a-f-]{36}\/tasks\//.test(window.location.hash)) {
     history.replaceState(null, '', window.location.hash.replace(/\/tasks\/[0-9a-f-]{36}$/, ''));
@@ -77,17 +81,20 @@ window.addEventListener('hashchange', closeTaskPanel);
 
 async function loadTask(taskId) {
   const { data: task, error } = await supabase
-    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at)').eq('id', taskId).maybeSingle();
+    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, private, owner_id, created_by)').eq('id', taskId).maybeSingle();
   if (error) throw error;
   if (!task) return null;
   const { data: subtasks, error: subError } = await supabase.from('tasks').select('*').eq('parent_id', taskId);
   if (subError) throw subError;
-  return { task, subtasks: subtasks.sort(byPosition) };
+  const access = task.campaign.private ? await loadAccess(task.campaign_id) : [];
+  return { task, subtasks: subtasks.sort(byPosition), access };
 }
 
-// People who can be assigned work, plus whoever is assigned already
+// People who can be assigned work (on a private project, only those who
+// can see it), plus whoever is assigned already
 function assigneeOptions(selectedId) {
-  const people = state.people.filter(p => (p.active && p.role !== 'director') || p.id === selectedId);
+  const audience = projectAudience(current.task.campaign, current.access);
+  const people = state.people.filter(p => audience.includes(p) || p.id === selectedId);
   return `<option value="">Unassigned</option>${options(Object.fromEntries(people.map(p => [p.id, p.name])), selectedId)}`;
 }
 

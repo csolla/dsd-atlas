@@ -38,8 +38,13 @@ export function renderBody(body) {
   return html;
 }
 
-// People who can be mentioned: active admins and team members
-export const mentionable = () => state.people.filter(p => p.active && p.role !== 'director');
+// People who can be mentioned: active admins and team members. While a
+// task is open, only those who can see its project.
+let audience = null;
+export function setMentionAudience(people) {
+  audience = people;
+}
+export const mentionable = () => audience || state.people.filter(p => p.active && p.role !== 'director');
 
 // In the editor mentions show as "@Name"; stored ones become tokens again
 export function toEditorText(body) {

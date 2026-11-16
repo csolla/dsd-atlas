@@ -91,7 +91,8 @@ export async function loadTasksHours(taskIds) {
 
 // "Campaign › Task" or "Campaign › Parent › Subtask" or "Internal"
 export function entryLabel(entry) {
-  if (!entry.campaign) return 'Internal';
+  if (!entry.campaign_id) return 'Internal';
+  if (!entry.campaign) return 'Private project';
   if (!entry.task) return entry.campaign.name;
   const parent = entry.task.parent?.title;
   return `${entry.campaign.name} › ${parent ? `${parent} › ` : ''}${entry.task.title}`;

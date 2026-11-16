@@ -360,9 +360,11 @@ function buildRows(page) {
 
 // Campaign name first, then the task (with its main task for a subtask)
 function rowLabel(row) {
-  if (!row.campaign) {
+  if (!row.campaign_id) {
     return `<span class="row-campaign">Internal</span><span class="row-task">Meetings, admin, training</span>`;
   }
+  // Hours on a private project this viewer can't see
+  if (!row.campaign) return '<span class="row-campaign">🔒 Private project</span>';
   const task = row.task
     ? `${row.task.parent?.title ? `${esc(row.task.parent.title)} › ` : ''}${esc(row.task.title)}`
     : '';
@@ -556,7 +558,7 @@ function drawEntries(page) {
               <tr data-id="${esc(entry.id)}">
                 <td class="nowrap">${esc(weekday)} ${esc(day)}</td>
                 <td>
-                  ${entry.campaign ? forTag(entry.campaign) : '<span class="tag tag-internal">Internal</span>'}
+                  ${entry.campaign ? forTag(entry.campaign) : entry.campaign_id ? '' : '<span class="tag tag-internal">Internal</span>'}
                   ${esc(entryLabel(entry))}
                   ${splitNote(entry)}
                 </td>

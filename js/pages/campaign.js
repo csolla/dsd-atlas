@@ -11,6 +11,7 @@ import {
   confirmDialog, TASK_STATUSES,
 } from '../ui.js';
 import { unitLine } from '../departments.js';
+import { loadAccess, projectAudience, accessSummary } from '../access.js';
 import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
 
@@ -48,7 +49,9 @@ export async function renderCampaign(el, id, openTask = null) {
   memory[id] ||= { q: '', person: '', assignee: '', due: '', showAllDone: false, details: false };
   const page = { el, campaign, tasks: tasksResult.value, view: savedView(), dragging: false, counts: {}, m: memory[id] };
   const owner = personById(campaign.owner_id);
-  const team = state.people.filter(p => p.active && p.role !== 'director');
+  // On a private project, only people who can see it can be assigned
+  const access = campaign.private ? await loadAccess(id).catch(() => []) : [];
+  const team = projectAudience(campaign, access);
 
   el.innerHTML = `
     <a class="back-link" href="#/campaigns">← Projects</a>
@@ -58,6 +61,7 @@ export async function renderCampaign(el, id, openTask = null) {
           <h1>${esc(campaign.name)}</h1>
           <div class="summary-meta">
             ${unitLine(campaign)}
+            ${campaign.private ? `<span class="private-flag" title="Also its owner and Admins"><span aria-hidden="true">🔒</span> Private: ${esc(accessSummary(access))}</span>` : ''}
             ${statusPill(campaign.status)}
             <span>${esc(fmtCompactRange(campaign.start_date, campaign.end_date))}</span>
             ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}
