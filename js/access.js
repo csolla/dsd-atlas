@@ -41,6 +41,15 @@ export function accessSummary(access = []) {
   return names.length <= 4 ? names.join(', ') : `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`;
 }
 
+// Everyone added, by name: { departments: [...], people: [...] }
+export function accessNames(access = []) {
+  const byName = (a, b) => a.localeCompare(b);
+  return {
+    departments: access.filter(a => a.department_id).map(a => departmentName(a.department_id)).sort(byName),
+    people: access.filter(a => a.person_id).map(a => state.people.find(p => p.id === a.person_id)?.name || 'Someone').sort(byName),
+  };
+}
+
 // Save who's added: removes the rows no longer wanted and adds the new ones
 export async function saveAccess(campaignId, before, { personIds, departmentIds }) {
   const wanted = new Set([...personIds.map(id => `p:${id}`), ...departmentIds.map(id => `d:${id}`)]);

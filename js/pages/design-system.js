@@ -106,12 +106,20 @@ export function renderDesignSystem(el) {
         <p class="form-success">Success message: confirm what happened.</p>
       </div>`)}
 
-    ${section('picks', 'Tick-box lists', 'Choose several items from a longer list, such as who can see a private project.', [
-      'Use inside a form when more than five options can be ticked; the list scrolls after a few rows.',
-      'Give each list a short label above it.',
+    ${section('picks', 'Pick lists', 'Choose several items from a longer list, such as who can see a private project.', [
+      'A dropdown adds one item at a time; each added item shows as a chip below it, with × to remove it. Items already added leave the dropdown.',
+      'Long lists (people) are grouped in the dropdown, by department.',
+      'On a page, show what was picked as plain chips with a short label (<code>.access-line</code>).',
     ], `
-      <span class="pick-label">Departments</span>
-      <div class="pick-list">${['Corporate', 'Delight', 'Education', 'Marketing', 'Planning Center'].map((d, i) => `<label class="pick"><input type="checkbox" ${i === 1 ? 'checked' : ''}> ${d}</label>`).join('')}</div>
+      <label class="field"><span>Departments</span>
+        <select><option>Add a department…</option><option>Corporate</option><option>Education</option></select></label>
+      <div class="pick-chips">
+        <span class="filter-chip">Delight <button type="button" class="icon-btn" aria-label="Remove Delight">×</button></span>
+        <span class="filter-chip">Planning Center <button type="button" class="icon-btn" aria-label="Remove Planning Center">×</button></span>
+      </div>
+      <div class="access-line"><span class="access-label"><span aria-hidden="true">🔒</span> Who can see it</span>
+        <span class="access-group"><span class="access-label">Departments</span> <span class="summary-chip">Delight</span> <span class="summary-chip">Planning Center</span></span>
+        <span class="muted small">plus its owner and Admins</span></div>
       <p class="ds-gap"><span class="private-flag"><span aria-hidden="true">🔒</span> Private</span></p>`)}
 
     ${section('tags', 'Tags, statuses and chips', 'Small labels that carry a category or state. Colour always comes with a word or an icon, never alone.', [

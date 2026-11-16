@@ -579,10 +579,11 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .privacy-field { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px 12px; display: grid; gap: 6px; }
 .privacy-field legend { padding: 0 4px; font-weight: 600; }
 .private-picks { display: grid; gap: 6px; margin-top: 4px; }
-.pick-label { font-size: 13px; font-weight: 600; color: var(--muted); }
-.pick-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 2px 12px; max-height: 160px; overflow-y: auto;
-  border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; background: var(--surface); }
-.pick { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.pick-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pick-chips:empty { display: none; }
+.access-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13.5px; }
+.access-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.access-label { font-weight: 600; color: var(--muted); margin-right: 2px; }
 .private-flag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .archived-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--radius); background: var(--surface-2); color: var(--text); font-size: 14px; }
 .subtask-mark { color: var(--muted); font-weight: 400; margin-right: 6px; }

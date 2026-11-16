@@ -103,7 +103,7 @@ const SECTIONS = [
       <ul>
         <li>Any team member can delete a task from its panel; its subtasks, comments and attachments go with it.</li>
         <li>Only the Admin can delete a project.</li>
-        <li><strong>Private projects</strong> (for Job Scorecards, finance or HR): in the project's form, under <strong>Who can see it</strong>, choose <strong>Only the departments and people I choose</strong> and tick them. Its owner and Admins always see it; nobody else sees it, its tasks, comments or files. Tasks can only be assigned to, and @mentions only reach, people who can see it. Only the owner or an Admin can change who sees it. Its hours still count in Dashboards, without its name.</li>
+        <li><strong>Private projects</strong> (for Job Scorecards, finance or HR): in the project's form, under <strong>Who can see it</strong>, choose <strong>Only the departments and people I choose</strong>, then add them from the Departments and People dropdowns (× removes one). The project page lists who can see it. Its owner and Admins always see it; nobody else sees it, its tasks, comments or files. Tasks can only be assigned to, and @mentions only reach, people who can see it. Only the owner or an Admin can change who sees it. Its hours still count in Dashboards, without its name.</li>
         <li><strong>Archive</strong> (next to Edit on a project) moves a finished project to the <strong>Archived</strong> tab and takes its tasks off My tasks. Its hours stay in Dashboards, but no new time can be logged on it. <strong>Unarchive</strong> brings it back.</li>
         <li><strong>Anything with hours logged can't be deleted.</strong> Set it to Done or On hold instead.</li>
       </ul>`,

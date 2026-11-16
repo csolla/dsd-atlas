@@ -282,6 +282,41 @@ function currentFor(c) {
 
 // New campaign (campaign = null) or edit an existing one.
 // onSaved receives the saved campaign row.
+// A dropdown to add items, with each added one shown as a chip that can be
+// removed. Chips carry hidden inputs named `name`, which the form reads.
+function setUpPicker(dialog, name, placeholder, items, startIds) {
+  const select = dialog.querySelector(`[data-pick="${name}"]`);
+  const chips = dialog.querySelector(`[data-chips="${name}"]`);
+  const picked = new Set(startIds.filter(id => items.some(i => i.id === id)));
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  const draw = () => {
+    const left = items.filter(i => !picked.has(i.id)).sort(byName);
+    const groups = [...new Set(left.map(i => i.group).filter(Boolean))].sort();
+    const opt = i => `<option value="${esc(i.id)}">${esc(i.name)}</option>`;
+    select.innerHTML = `<option value="">${left.length ? placeholder : 'Everyone is added'}</option>${groups.length
+      ? groups.map(g => `<optgroup label="${esc(g)}">${left.filter(i => i.group === g).map(opt).join('')}</optgroup>`).join('')
+      : left.map(opt).join('')}`;
+    select.disabled = !left.length;
+    chips.innerHTML = items.filter(i => picked.has(i.id)).sort(byName).map(i => `
+      <span class="filter-chip">${esc(i.name)}<input type="hidden" name="${name}" value="${esc(i.id)}">
+        <button type="button" class="icon-btn" data-remove="${esc(i.id)}" aria-label="Remove ${esc(i.name)}">×</button></span>`).join('');
+  };
+  select.addEventListener('change', () => {
+    if (!select.value) return;
+    picked.add(select.value);
+    draw();
+    select.focus();
+  });
+  chips.addEventListener('click', event => {
+    const button = event.target.closest('[data-remove]');
+    if (!button) return;
+    picked.delete(button.dataset.remove);
+    draw();
+    select.focus();
+  });
+  draw();
+}
+
 export async function openCampaignForm(campaign, onSaved) {
   const marketing = departmentByKey('marketing');
   const defaultDept = state.me.department_id || marketing?.id;
@@ -298,20 +333,21 @@ export async function openCampaignForm(campaign, onSaved) {
   // Who can see it: only the owner, the creator or an Admin changes it
   const manage = canManageAccess(campaign);
   const before = campaign?.private ? await loadAccess(campaign.id).catch(() => []) : [];
-  const picked = new Set(before.map(a => a.person_id || a.department_id));
-  const checkbox = (name, id, label) =>
-    `<label class="pick"><input type="checkbox" name="${name}" value="${esc(id)}" ${picked.has(id) ? 'checked' : ''}> ${esc(label)}</label>`;
   const privacy = manage ? `
       <fieldset class="field privacy-field">
         <legend>Who can see it</legend>
-        <label class="toggle"><input type="radio" name="visibility" value="everyone" ${c.private ? '' : 'checked'}> Everyone at DSD</label>
-        <label class="toggle"><input type="radio" name="visibility" value="private" ${c.private ? 'checked' : ''}> Only the departments and people I choose</label>
+        <select name="visibility" aria-label="Who can see it">
+          <option value="everyone" ${c.private ? '' : 'selected'}>Everyone at DSD</option>
+          <option value="private" ${c.private ? 'selected' : ''}>Only the departments and people I choose</option>
+        </select>
         <div class="private-picks" data-private-picks ${c.private ? '' : 'hidden'}>
           <p class="muted small">Its owner and Admins always see it. Nobody else sees its tasks, comments or files.</p>
-          <span class="pick-label">Departments</span>
-          <div class="pick-list">${state.departments.map(d => checkbox('access_dept', d.id, d.name)).join('')}</div>
-          <span class="pick-label">People</span>
-          <div class="pick-list">${state.people.filter(p => p.active).map(p => checkbox('access_person', p.id, p.name)).join('')}</div>
+          <label class="field"><span>Departments</span>
+            <select data-pick="access_dept"></select></label>
+          <div class="pick-chips" data-chips="access_dept"></div>
+          <label class="field"><span>People</span>
+            <select data-pick="access_person"></select></label>
+          <div class="pick-chips" data-chips="access_person"></div>
         </div>
       </fieldset>`
     : c.private ? `<p class="muted small form-note">🔒 Private: seen by ${esc(accessSummary(before))}, its owner and Admins. Only its owner or an Admin can change this.</p>` : '';
@@ -364,8 +400,8 @@ export async function openCampaignForm(campaign, onSaved) {
       };
       if (manage) values.private = f.visibility === 'private';
       const access = {
-        departmentIds: values.private ? [...form.querySelectorAll('[name=access_dept]:checked')].map(i => i.value) : [],
-        personIds: values.private ? [...form.querySelectorAll('[name=access_person]:checked')].map(i => i.value) : [],
+        departmentIds: values.private ? [...form.querySelectorAll('[name=access_dept]')].map(i => i.value) : [],
+        personIds: values.private ? [...form.querySelectorAll('[name=access_person]')].map(i => i.value) : [],
       };
 
       if (!values.name) return 'Give the project a name.';
@@ -402,9 +438,19 @@ export async function openCampaignForm(campaign, onSaved) {
       ? 'Marketing hours for Education count against its budget; for Planning Center or Delight, against the Planning Center budget; for both, they are split. Hours for any other department count against neither.'
       : 'Who the work is for. Leave it as the own department unless the work is for another team.';
   };
-  dialog.querySelectorAll('[name=visibility]').forEach(radio => radio.addEventListener('change', () => {
-    dialog.querySelector('[data-private-picks]').hidden = dialog.querySelector('[name=visibility]:checked').value !== 'private';
-  }));
+  if (manage) {
+    const visibility = dialog.querySelector('[name=visibility]');
+    visibility.addEventListener('change', () => {
+      dialog.querySelector('[data-private-picks]').hidden = visibility.value !== 'private';
+    });
+    setUpPicker(dialog, 'access_dept', 'Add a department…', state.departments.map(d => ({ id: d.id, name: d.name })),
+      before.filter(a => a.department_id).map(a => a.department_id));
+    // People grouped by their department, so a long list stays easy to scan
+    const people = state.people.filter(p => p.active || before.some(a => a.person_id === p.id));
+    setUpPicker(dialog, 'access_person', 'Add a person…',
+      people.map(p => ({ id: p.id, name: p.name, group: state.departments.find(d => d.id === p.department_id)?.name || 'No department' })),
+      before.filter(a => a.person_id).map(a => a.person_id));
+  }
   deptSelect.addEventListener('change', () => {
     const choices = forChoices(deptSelect.value, sharedSplit);
     const keep = forSelect.value in choices ? forSelect.value

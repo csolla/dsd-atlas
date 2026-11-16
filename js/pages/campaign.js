@@ -11,7 +11,7 @@ import {
   confirmDialog, TASK_STATUSES,
 } from '../ui.js';
 import { unitLine } from '../departments.js';
-import { loadAccess, projectAudience, accessSummary } from '../access.js';
+import { loadAccess, projectAudience, accessNames } from '../access.js';
 import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
 
@@ -61,7 +61,7 @@ export async function renderCampaign(el, id, openTask = null) {
           <h1>${esc(campaign.name)}</h1>
           <div class="summary-meta">
             ${unitLine(campaign)}
-            ${campaign.private ? `<span class="private-flag" title="Also its owner and Admins"><span aria-hidden="true">🔒</span> Private: ${esc(accessSummary(access))}</span>` : ''}
+            ${campaign.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
             ${statusPill(campaign.status)}
             <span>${esc(fmtCompactRange(campaign.start_date, campaign.end_date))}</span>
             ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}
@@ -77,6 +77,7 @@ export async function renderCampaign(el, id, openTask = null) {
             <button class="btn btn-small btn-ghost" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>` : ''}
         </div>
       </div>
+      ${campaign.private ? accessLine(access) : ''}
       ${campaign.archived_at ? `<p class="archived-note" role="status"><strong>Archived</strong> on ${esc(fmtDate(campaign.archived_at.slice(0, 10)))}${personById(campaign.archived_by) ? ` by ${esc(personById(campaign.archived_by).name)}` : ''}.
         Kept for reference: its hours still count in Dashboards, but no new time can be logged on it.</p>` : ''}
       <div class="campaign-details" data-details ${page.m.details ? '' : 'hidden'}>
@@ -499,4 +500,16 @@ async function deleteCampaign(page) {
   }
   toast('Project deleted');
   window.location.hash = '/campaigns';
+}
+
+// Who can see a private project, shown under its title
+function accessLine(access) {
+  const { departments, people } = accessNames(access);
+  const chips = names => names.map(n => `<span class="summary-chip">${esc(n)}</span>`).join(' ');
+  const parts = [
+    departments.length && `<span class="access-group"><span class="access-label">${departments.length === 1 ? 'Department' : 'Departments'}</span> ${chips(departments)}</span>`,
+    people.length && `<span class="access-group"><span class="access-label">People</span> ${chips(people)}</span>`,
+  ].filter(Boolean);
+  return `<div class="access-line"><span class="access-label"><span aria-hidden="true">🔒</span> Who can see it</span>
+    ${parts.join('')}<span class="muted small">${parts.length ? 'plus' : 'Only'} its owner and Admins</span></div>`;
 }
