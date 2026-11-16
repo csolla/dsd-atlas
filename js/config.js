@@ -1,4 +1,4 @@
-// Supabase project for the Marketing PM Tool (separate from DSD Atlas).
+// Supabase project for DSD Atlas (formerly the Marketing PM Tool).
 // The public (anon) key is meant to be public: access is enforced by the
 // database's row level security rules.
 export const SUPABASE_URL = 'https://qaqntfsavgibdoctculy.supabase.co';

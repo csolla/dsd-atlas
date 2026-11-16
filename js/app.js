@@ -128,8 +128,8 @@ function renderShell() {
   app.innerHTML = `
     <header class="topbar">
       <a class="brand" href="#${homePath()}">
-        <span class="brand-mark" aria-hidden="true">M</span>
-        <span class="brand-name">Marketing PM</span>
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span class="brand-name">DSD Atlas</span>
       </a>
       <nav class="nav" aria-label="Main">
         ${NAV.filter(item => item.roles.includes(role)).map(item =>

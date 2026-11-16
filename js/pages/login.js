@@ -55,8 +55,8 @@ export function renderLogin(el, { error } = {}) {
     <div class="login">
       <aside class="login-welcome">
         <div class="brand brand-large brand-inverse">
-          <span class="brand-mark" aria-hidden="true">M</span>
-          <span class="brand-name">Marketing PM</span>
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span class="brand-name">DSD Atlas</span>
         </div>
         <h2>Where DSD Marketing plans its work and tracks its time.</h2>
         <ul class="welcome-points">
@@ -75,8 +75,8 @@ function showForm(card, { error = null, email = '' } = {}) {
   card.innerHTML = `
     <form novalidate>
       <div class="brand brand-large login-card-brand">
-        <span class="brand-mark" aria-hidden="true">M</span>
-        <span class="brand-name">Marketing PM</span>
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span class="brand-name">DSD Atlas</span>
       </div>
       <h1>Sign in</h1>
       <p class="muted login-lead">Enter your DSD email and we'll send you a sign-in link. No password needed.</p>

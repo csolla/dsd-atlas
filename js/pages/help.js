@@ -7,7 +7,7 @@ const SECTIONS = [
     id: 'purpose',
     title: 'Purpose and roles',
     html: `
-      <p>The Marketing PM Tool is where the Marketing team plans its campaigns, manages tasks and logs its hours, so
+      <p>DSD Atlas is where the Marketing team plans its campaigns, manages tasks and logs its hours, so
         directors can see how Marketing's time is spent across Education and Planning Center. It replaces Asana and the
         old time-log spreadsheet for Marketing work, and is separate from DSD Atlas.</p>
       <div class="table-wrap"><table class="table">
@@ -293,7 +293,7 @@ export function renderHelp(el) {
     <div class="page-header">
       <div>
         <h1>Help</h1>
-        <p class="muted">How to use the Marketing PM Tool. Questions this doesn't answer? Ask Carlota.</p>
+        <p class="muted">How to use DSD Atlas. Questions this doesn't answer? Ask Carlota.</p>
       </div>
     </div>
     <div class="help">

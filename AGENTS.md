@@ -1,6 +1,9 @@
-# Marketing PM Tool
+# DSD Atlas
 
-A project management tool for DSD's Marketing team: campaigns, tasks, time logging and director dashboards. It is a new, standalone tool, separate from DSD Atlas (`../dsd-projects`), and must not share its data or Supabase project.
+DSD's project management tool: campaigns (projects), tasks, time logging and director dashboards. Built for the Marketing team as the Marketing PM Tool and renamed DSD Atlas on 16 November 2026; it replaces Asana for every DSD department from go-live on 14 December 2026 (plan: https://claude.ai/artifact/Q9jZ9Rvc3mx7iCKN9cUytS).
+
+- **Live app:** https://csolla.github.io/dsd-atlas/ (GitHub repo `csolla/dsd-atlas`).
+- **The old Atlas is retired.** The earlier tool also called Atlas (repo `csolla/dsd-projects`, now archived, folder `../archive/atlas-old`) is switched off. Don't change it, analyse it or compare against it.
 
 - **Stack:** plain HTML, CSS and JavaScript (no build step), hosted on GitHub Pages, with a new, dedicated Supabase project for the database, login, file storage and live updates.
 - **Owner:** Carlota (csolla@digitalsmiledesign.com), who is not technical. Explain each step in plain language.
