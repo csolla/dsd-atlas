@@ -60,4 +60,4 @@ export function forTag(campaign) {
 }
 
 // Fields to ask for whenever a campaign is embedded in another query
-export const CAMPAIGN_UNIT_FIELDS = 'budget, department_id, for_department_id';
+export const CAMPAIGN_UNIT_FIELDS = 'budget, department_id, for_department_id, archived_at';

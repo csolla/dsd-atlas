@@ -77,7 +77,7 @@ window.addEventListener('hashchange', closeTaskPanel);
 
 async function loadTask(taskId) {
   const { data: task, error } = await supabase
-    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id)').eq('id', taskId).maybeSingle();
+    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at)').eq('id', taskId).maybeSingle();
   if (error) throw error;
   if (!task) return null;
   const { data: subtasks, error: subError } = await supabase.from('tasks').select('*').eq('parent_id', taskId);

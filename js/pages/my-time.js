@@ -289,14 +289,14 @@ async function drawSuggestions(page) {
   }
   const loadId = page.loadId;
   const { data, error } = await supabase.from('tasks')
-    .select('id, title, status, due_date, campaign_id, campaign:campaigns(id, name, budget, department_id, for_department_id), parent:parent_id(title)')
+    .select('id, title, status, due_date, campaign_id, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at), parent:parent_id(title)')
     .eq('assignee_id', page.personId).neq('status', 'done');
   if (error || loadId !== page.loadId) return;
   const end = addDays(page.start, 6);
   const present = new Set(buildRows(page).map(r => r.key));
   const picks = data
     .filter(t => t.status === 'in_progress' || (t.due_date && t.due_date >= page.start && t.due_date <= end))
-    .filter(t => !present.has(`${t.campaign_id}|${t.id}`))
+    .filter(t => !t.campaign?.archived_at && !present.has(`${t.campaign_id}|${t.id}`))
     .slice(0, 6);
   if (!picks.length) {
     box.innerHTML = '';
@@ -395,7 +395,7 @@ function drawGrid(page) {
       <table class="table time-grid">
         <thead>
           <tr>
-            <th>Campaign / task</th>
+            <th>Project / task</th>
             ${days.map(day => {
               const { weekday, day: date } = dayParts(day);
               const d = info[day];
@@ -548,7 +548,7 @@ function drawEntries(page) {
   box.innerHTML = `
     <div class="table-wrap">
       <table class="table entries-table">
-        <thead><tr><th>Date</th><th>Campaign / task</th><th class="num">Hours</th><th>Note</th>${editable ? '<th></th>' : ''}</tr></thead>
+        <thead><tr><th>Date</th><th>Project / task</th><th class="num">Hours</th><th>Note</th>${editable ? '<th></th>' : ''}</tr></thead>
         <tbody>
           ${page.entries.map(entry => {
             const { weekday, day } = dayParts(entry.entry_date);

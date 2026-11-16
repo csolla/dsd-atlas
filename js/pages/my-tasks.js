@@ -76,14 +76,16 @@ async function load(page) {
   const { data, error } = await supabase
     .from('tasks')
     .select(`id, title, status, due_date, parent_id, position, campaign_id, updated_at,
-      campaign:campaigns(id, name, budget, department_id, for_department_id),
+      campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at),
       parent:parent_id(id, title, due_date)`)
     .eq('assignee_id', state.me.id);
   if (error) {
     page.el.querySelector('[data-list]').innerHTML = `<p class="form-error">${esc(errorMessage(error))}</p>`;
     return;
   }
-  page.items = data.map(item => ({ ...item, due: effectiveDue(item, item.parent) }));
+  // Tasks of archived projects drop out of My tasks
+  page.items = data.filter(item => !item.campaign?.archived_at)
+    .map(item => ({ ...item, due: effectiveDue(item, item.parent) }));
   draw(page);
 }
 
@@ -131,7 +133,7 @@ function draw(page) {
   if (!open.length && !(page.showDone && done.length)) {
     list.innerHTML = `<div class="empty-state"><p>${page.items.length
       ? 'All done. Nothing open is assigned to you.'
-      : 'Nothing is assigned to you yet. Tasks assigned to you in any campaign will show up here.'}</p></div>`;
+      : 'Nothing is assigned to you yet. Tasks assigned to you in any project will show up here.'}</p></div>`;
     return;
   }
 

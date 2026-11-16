@@ -18,7 +18,7 @@ const TOKENS = [
     ['--accent', 'Buttons and links'], ['--accent-bright', 'Focus rings, selected states'], ['--accent-soft', 'Selected backgrounds'],
     ['--signal', 'Attention highlights'], ['--danger', 'Destructive actions, errors'], ['--success', 'Confirmations'],
   ] },
-  { group: 'Marketing budgets (who a campaign is for)', items: [
+  { group: 'Marketing budgets (who a project is for)', items: [
     ['--edu', 'Education'], ['--pc', 'Planning Center'], ['--shared', 'Education + Planning Center'],
   ] },
   { group: 'Charts (validated for colour blindness)', items: [
@@ -72,7 +72,7 @@ export function renderDesignSystem(el) {
       <p class="small muted">Small text (13) for metadata such as dates and counts.</p>`)}
 
     ${section('buttons', 'Buttons', 'One primary button per area, for the main action. Others are default; destructive ones are red.', [
-      '<strong>Primary:</strong> the main action of a page, form or dialog (Save, Create campaign).',
+      '<strong>Primary:</strong> the main action of a page, form or dialog (Save, Create project).',
       '<strong>Default:</strong> secondary actions (Edit, Add row). <strong>Ghost:</strong> low-key actions (Clear, Back to automatic).',
       '<strong>Danger outline</strong> opens a confirmation; the <strong>Danger</strong> button only appears inside that confirmation.',
     ], `
@@ -107,8 +107,8 @@ export function renderDesignSystem(el) {
       </div>`)}
 
     ${section('tags', 'Tags, statuses and chips', 'Small labels that carry a category or state. Colour always comes with a word or an icon, never alone.', [
-      '<strong>"For" tags</strong> wherever a campaign or entry is listed: Education, Planning Center and both in their budget colours; any other department in neutral.',
-      '<strong>Status pills</strong> for campaign status; <strong>status chips</strong> (icon + label) for budget health.',
+      '<strong>"For" tags</strong> wherever a project or entry is listed: Education, Planning Center and both in their budget colours; any other department in neutral.',
+      '<strong>Status pills</strong> for project status; <strong>status chips</strong> (icon + label) for budget health.',
     ], `
       <div class="ds-row">${example('education')} ${example('planning_center')} ${example('shared')} ${example('other')} <span class="tag tag-internal">Internal</span></div>
       <div class="ds-row">${statusPill('planned')} ${statusPill('in_progress')} ${statusPill('done')} ${statusPill('on_hold')}</div>
@@ -133,10 +133,10 @@ export function renderDesignSystem(el) {
     ], `
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Campaign</th><th>For</th><th class="num">Hours</th></tr></thead>
+          <thead><tr><th>Project</th><th>For</th><th class="num">Hours</th></tr></thead>
           <tbody>
-            <tr><td><span class="row-link">Example campaign</span></td><td>${example('education')}</td><td class="num">12.5 h</td></tr>
-            <tr><td><span class="row-link">Another campaign</span></td><td>${example('shared')}</td><td class="num">4 h</td></tr>
+            <tr><td><span class="row-link">Example project</span></td><td>${example('education')}</td><td class="num">12.5 h</td></tr>
+            <tr><td><span class="row-link">Another project</span></td><td>${example('shared')}</td><td class="num">4 h</td></tr>
           </tbody>
         </table>
       </div>
@@ -152,7 +152,7 @@ export function renderDesignSystem(el) {
 
     ${section('feedback', 'Dialogs and messages', 'Dialogs for short forms and confirmations; toasts for quick confirmations that disappear.', [
       'Confirm anything that deletes or can\'t be undone; say exactly what will happen.',
-      'Toasts: a few words, past tense ("Campaign created").',
+      'Toasts: a few words, past tense ("Project created").',
     ], `
       <div class="ds-row">
         <button class="btn" type="button" data-demo-dialog>Open a dialog</button>
@@ -173,6 +173,6 @@ export function renderDesignSystem(el) {
   el.querySelector('[data-demo-confirm]').addEventListener('click', () => confirmDialog({
     title: 'Delete example?', message: 'This is only an example; nothing will be deleted.', confirmLabel: 'Delete', danger: true,
   }));
-  el.querySelector('[data-demo-toast]').addEventListener('click', () => toast('Campaign created'));
+  el.querySelector('[data-demo-toast]').addEventListener('click', () => toast('Project created'));
   el.querySelector('[data-demo-error]').addEventListener('click', () => toast('Could not reach the server. Try again.', 'error'));
 }

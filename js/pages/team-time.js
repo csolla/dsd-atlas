@@ -159,7 +159,7 @@ export async function renderTeamTime(container, { week, onPickPerson }) {
         </tfoot>
       </table>
     </div>
-    <p class="muted small">Marketing team only. Hours on campaigns for both Education and Planning Center are already split. Click a person to open their week above.</p>`;
+    <p class="muted small">Marketing team only. Hours on projects for both Education and Planning Center are already split. Click a person to open their week above.</p>`;
 
   grid.querySelectorAll('tr[data-person]').forEach(row =>
     row.addEventListener('click', () => onPickPerson(row.dataset.person)));

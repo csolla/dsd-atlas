@@ -42,7 +42,7 @@ const ROUTES = [
 
 const NAV = [
   { key: 'my-tasks', label: 'My tasks', href: '#/my-tasks', roles: WORK },
-  { key: 'campaigns', label: 'Campaigns', href: '#/campaigns', roles: WORK },
+  { key: 'campaigns', label: 'Projects', href: '#/campaigns', roles: WORK },
   { key: 'my-time', label: 'My time', href: '#/my-time', roles: WORK },
   { key: 'dashboards', label: 'Dashboards', href: '#/dashboards', roles: ALL },
   { key: 'capacity', label: 'Capacity', href: '#/capacity/people', roles: ['admin'] },

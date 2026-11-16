@@ -32,7 +32,7 @@ export function addDays(iso, days) {
 }
 
 const ENTRY_FIELDS = `*,
-  campaign:campaigns(id, name, budget, department_id, for_department_id),
+  campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at),
   task:tasks(id, title, parent_id, parent:parent_id(title))`;
 
 export async function loadEntries(personId, from, to) {

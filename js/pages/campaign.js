@@ -26,7 +26,7 @@ function savedView() {
 
 // openTask: a task to open straight away (from a shared task link)
 export async function renderCampaign(el, id, openTask = null) {
-  el.innerHTML = '<p class="muted">Loading campaign…</p>';
+  el.innerHTML = '<p class="muted">Loading project…</p>';
 
   const [campaignResult, tasksResult] = await Promise.allSettled([
     supabase.from('campaigns').select('*').eq('id', id).maybeSingle(),
@@ -40,8 +40,8 @@ export async function renderCampaign(el, id, openTask = null) {
   const campaign = campaignResult.value.data;
   if (!campaign) {
     el.innerHTML = `
-      <a class="back-link" href="#/campaigns">← Campaigns</a>
-      <div class="empty-state"><p>This campaign doesn't exist or was deleted.</p></div>`;
+      <a class="back-link" href="#/campaigns">← Projects</a>
+      <div class="empty-state"><p>This project doesn't exist or was deleted.</p></div>`;
     return;
   }
 
@@ -51,7 +51,7 @@ export async function renderCampaign(el, id, openTask = null) {
   const team = state.people.filter(p => p.active && p.role !== 'director');
 
   el.innerHTML = `
-    <a class="back-link" href="#/campaigns">← Campaigns</a>
+    <a class="back-link" href="#/campaigns">← Projects</a>
     <section class="card campaign-summary">
       <div class="summary-top">
         <div class="summary-title">
@@ -69,21 +69,24 @@ export async function renderCampaign(el, id, openTask = null) {
         </div>
         <div class="actions">
           <button class="btn btn-ghost btn-small" type="button" data-toggle-details aria-expanded="${page.m.details}">Details</button>
-          ${canEditWork() ? '<button class="btn btn-small" type="button" data-edit>Edit</button>' : ''}
+          ${canEditWork() ? `<button class="btn btn-small" type="button" data-edit>Edit</button>
+            <button class="btn btn-small btn-ghost" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>` : ''}
         </div>
       </div>
+      ${campaign.archived_at ? `<p class="archived-note" role="status"><strong>Archived</strong> on ${esc(fmtDate(campaign.archived_at.slice(0, 10)))}${personById(campaign.archived_by) ? ` by ${esc(personById(campaign.archived_by).name)}` : ''}.
+        Kept for reference: its hours still count in Dashboards, but no new time can be logged on it.</p>` : ''}
       <div class="campaign-details" data-details ${page.m.details ? '' : 'hidden'}>
         ${campaign.description ? `<p class="description">${esc(campaign.description)}</p>` : '<p class="muted">No description.</p>'}
         <p class="muted small">${esc(fmtDate(campaign.start_date))}${campaign.end_date ? ` to ${esc(fmtDate(campaign.end_date))}` : ''} · Planned ${fmtHours(campaign.planned_hours)}</p>
         ${isAdmin() ? `
           <div class="details-actions">
-            <button class="btn btn-small btn-danger-outline" type="button" data-delete hidden>Delete campaign</button>
-            <span class="muted small" data-delete-note hidden>This campaign has hours logged, so it can't be deleted. Set it to Done or On hold instead.</span>
+            <button class="btn btn-small btn-danger-outline" type="button" data-delete hidden>Delete project</button>
+            <span class="muted small" data-delete-note hidden>This project has hours logged, so it can't be deleted. Set it to Done or On hold instead.</span>
           </div>` : ''}
       </div>
     </section>
     <section class="section tasks-section">
-      ${canEditWork() ? `
+      ${canEditWork() && !campaign.archived_at ? `
         <form class="quick-add-bar" data-quick-add>
           <input class="quick-title" placeholder="Add a task and press Enter" aria-label="New task title" maxlength="300">
           <select data-qa="assignee" aria-label="Assign new tasks to">
@@ -118,6 +121,7 @@ export async function renderCampaign(el, id, openTask = null) {
   el.querySelector('[data-edit]')?.addEventListener('click', () =>
     openCampaignForm(campaign, () => renderCampaign(el, id)));
   el.querySelector('[data-delete]')?.addEventListener('click', () => deleteCampaign(page));
+  el.querySelector('[data-archive]')?.addEventListener('click', () => toggleArchived(page, () => renderCampaign(el, id)));
   const quick = el.querySelector('[data-quick-add]');
   if (quick) {
     quick.addEventListener('submit', event => quickAdd(event, page));
@@ -447,11 +451,38 @@ async function quickAdd(event, page) {
   input.focus();
 }
 
+// Archive: out of the everyday lists, kept for reference. Unarchive undoes it.
+async function toggleArchived(page, onDone) {
+  const { campaign } = page;
+  const archiving = !campaign.archived_at;
+  const ok = await confirmDialog(archiving
+    ? {
+      title: 'Archive project?',
+      message: `“${campaign.name}” moves to the Archived tab and its tasks leave everyone's My tasks. Its hours stay in Dashboards, but no new time can be logged on it. You can unarchive it at any time.`,
+      confirmLabel: 'Archive',
+    }
+    : {
+      title: 'Unarchive project?',
+      message: `“${campaign.name}” goes back to the project lists, and time can be logged on it again.`,
+      confirmLabel: 'Unarchive',
+    });
+  if (!ok) return;
+  const { error } = await supabase.from('campaigns')
+    .update(archiving ? { archived_at: new Date().toISOString(), archived_by: state.me.id } : { archived_at: null, archived_by: null })
+    .eq('id', campaign.id);
+  if (error) {
+    toast(errorMessage(error), 'error');
+    return;
+  }
+  toast(archiving ? 'Project archived' : 'Project unarchived');
+  onDone();
+}
+
 async function deleteCampaign(page) {
   const { campaign, tasks } = page;
   const count = tasks.length;
   const ok = await confirmDialog({
-    title: 'Delete campaign?',
+    title: 'Delete project?',
     message: `“${campaign.name}”${count ? ` and its ${count} task${count === 1 ? '' : 's'}` : ''} will be deleted for everyone. This can't be undone.`,
     confirmLabel: 'Delete',
     danger: true,
@@ -462,6 +493,6 @@ async function deleteCampaign(page) {
     toast(errorMessage(error), 'error');
     return;
   }
-  toast('Campaign deleted');
+  toast('Project deleted');
   window.location.hash = '/campaigns';
 }

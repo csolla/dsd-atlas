@@ -7,15 +7,15 @@ const SECTIONS = [
     id: 'purpose',
     title: 'Purpose and roles',
     html: `
-      <p>DSD Atlas is where the Marketing team plans its campaigns, manages tasks and logs its hours, so
-        directors can see how Marketing's time is spent across Education and Planning Center. It replaces Asana and the
-        old time-log spreadsheet for Marketing work, and is separate from DSD Atlas.</p>
+      <p>DSD Atlas is where every DSD department plans its projects and manages its tasks. It replaces Asana from
+        14 December 2026. Marketing also logs its hours here, so directors can see how Marketing's time is spent across
+        Education and Planning Center; hours for the other departments come later.</p>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Role</th><th>Who</th><th>What they can do</th></tr></thead>
         <tbody>
-          <tr><td>Admin</td><td>Carlota</td><td>Everything a team member can do, plus Settings (roles, capacity, budgets, bank holidays, everyone's time off), editing anyone's time, deleting campaigns, Team time and budget alerts</td></tr>
-          <tr><td>Team member</td><td>The Marketing team</td><td>Create and edit campaigns and tasks, comment and attach files, log their own time, add their own time off, view Dashboards</td></tr>
-          <tr><td>Director</td><td>Education and Planning Center directors</td><td>View Dashboards only</td></tr>
+          <tr><td>Admin</td><td>Carlota</td><td>Everything a team member can do, plus Settings (roles, capacity, budgets, bank holidays, everyone's time off), editing anyone's time, deleting projects, Team time and budget alerts</td></tr>
+          <tr><td>Team member</td><td>Everyone in a department</td><td>Create and edit projects and tasks, comment and attach files, log their own time, add their own time off, view Dashboards</td></tr>
+          <tr><td>Director</td><td>Department directors</td><td>View Dashboards only</td></tr>
         </tbody>
       </table></div>
       <p>Everyone signing in for the first time starts as a Team member. Only the Admin can change someone's role.</p>`,
@@ -42,7 +42,7 @@ const SECTIONS = [
     id: 'my-tasks',
     title: 'Your daily routine: My tasks',
     html: `
-      <p>Start each day on <a href="#/my-tasks">My tasks</a>. It lists every task and subtask assigned to you, across all campaigns, grouped by due date.</p>
+      <p>Start each day on <a href="#/my-tasks">My tasks</a>. It lists every task and subtask assigned to you, across all projects, grouped by due date.</p>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Group</th><th>What's in it</th></tr></thead>
         <tbody>
@@ -62,9 +62,9 @@ const SECTIONS = [
   },
   {
     id: 'campaigns',
-    title: 'Campaigns and tasks',
+    title: 'Projects and tasks',
     html: `
-      <p>Every piece of work belongs to a campaign. Every campaign belongs to one <strong>department</strong> (the team that owns it), and each department to one <strong>business unit</strong>:</p>
+      <p>Every piece of work belongs to a project. Every project belongs to one <strong>department</strong> (the team that owns it), and each department to one <strong>business unit</strong>:</p>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Business unit</th><th>Departments</th></tr></thead>
         <tbody>
@@ -73,27 +73,27 @@ const SECTIONS = [
           <tr><td>Corporate</td><td>Corporate, Marketing</td></tr>
         </tbody>
       </table></div>
-      <p>A campaign also says who the work is <strong>for</strong>. Usually that's its own department. Marketing campaigns can be for any department, and that decides whose budget Marketing's hours count against:</p>
+      <p>A project also says who the work is <strong>for</strong>. Usually that's its own department. Marketing projects can be for any department, and that decides whose budget Marketing's hours count against:</p>
       <div class="table-wrap"><table class="table">
-        <thead><tr><th>Marketing campaign for</th><th>Hours count against</th></tr></thead>
+        <thead><tr><th>Marketing project for</th><th>Hours count against</th></tr></thead>
         <tbody>
           <tr><td>Education</td><td>Education budget</td></tr>
           <tr><td>Planning Center</td><td>Planning Center budget</td></tr>
           <tr><td>Delight</td><td>Planning Center budget</td></tr>
           <tr><td>Education + Planning Center</td><td>Split automatically, 70% Education / 30% Planning Center</td></tr>
-          <tr><td>Any other department (Corporate, Marketing…)</td><td>Neither budget. Still counts as campaign work in Marketing's capacity</td></tr>
+          <tr><td>Any other department (Corporate, Marketing…)</td><td>Neither budget. Still counts as project work in Marketing's capacity</td></tr>
         </tbody>
       </table></div>
-      <h3>Create a campaign</h3>
+      <h3>Create a project</h3>
       <ol>
-        <li>Go to <a href="#/campaigns">Campaigns</a> → <strong>New campaign</strong>.</li>
+        <li>Go to <a href="#/campaigns">Projects</a> → <strong>New project</strong>.</li>
         <li>Fill in name, description, department, who it's for, status, dates, owner and planned hours. Department starts as yours.</li>
-        <li>Click <strong>Create campaign</strong>. To change it later, open it and click <strong>Edit</strong>.</li>
+        <li>Click <strong>Create project</strong>. To change it later, open it and click <strong>Edit</strong>.</li>
       </ol>
-      <p>Use the filters and the search box on the Campaigns page to find a campaign. Hours logged turn red when they pass the planned hours.</p>
+      <p>Use the filters and the search box on the Projects page to find a project. Hours logged turn red when they pass the planned hours.</p>
       <h3>Add and organise tasks</h3>
       <ol>
-        <li>Open the campaign and type a title in <strong>Add a task and press Enter</strong>. It goes to To do.</li>
+        <li>Open the project and type a title in <strong>Add a task and press Enter</strong>. It goes to To do.</li>
         <li>On the <strong>Board</strong>, drag cards between To do, In progress, In review and Done, and up or down to reorder.</li>
         <li><strong>List</strong> shows the same tasks as a table.</li>
         <li>Click a card to open its side panel: assignee, due date, status and description save as you leave each field.</li>
@@ -102,7 +102,8 @@ const SECTIONS = [
       <h3>Deleting</h3>
       <ul>
         <li>Any team member can delete a task from its panel; its subtasks, comments and attachments go with it.</li>
-        <li>Only the Admin can delete a campaign.</li>
+        <li>Only the Admin can delete a project.</li>
+        <li><strong>Archive</strong> (next to Edit on a project) moves a finished project to the <strong>Archived</strong> tab and takes its tasks off My tasks. Its hours stay in Dashboards, but no new time can be logged on it. <strong>Unarchive</strong> brings it back.</li>
         <li><strong>Anything with hours logged can't be deleted.</strong> Set it to Done or On hold instead.</li>
       </ul>`,
   },
@@ -129,7 +130,7 @@ const SECTIONS = [
     id: 'time',
     title: 'Logging your time',
     html: `
-      <p>Log every working hour, including meetings and admin, so the dashboards show where Marketing's time really goes. Campaign time always goes on a task (or subtask); only Internal time has no task.</p>
+      <p>Log every working hour, including meetings and admin, so the dashboards show where Marketing's time really goes. Project time always goes on a task (or subtask); only Internal time has no task.</p>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Way</th><th>Where</th><th>Best for</th></tr></thead>
         <tbody>
@@ -141,7 +142,7 @@ const SECTIONS = [
       <h3>Weekly grid</h3>
       <ol>
         <li>On My time, use ‹ and › to change week; <strong>This week</strong> jumps back.</li>
-        <li>Start the week with <strong>Copy last week's rows</strong> or a <strong>suggested row</strong> (your tasks in progress or due this week). For anything else, click <strong>Add row</strong> and pick the campaign and its task (or <strong>Internal</strong>, which has no task).</li>
+        <li>Start the week with <strong>Copy last week's rows</strong> or a <strong>suggested row</strong> (your tasks in progress or due this week). For anything else, click <strong>Add row</strong> and pick the project and its task (or <strong>Internal</strong>, which has no task).</li>
         <li>Type hours as <code>1.5</code> or <code>1:30</code>. It saves straight away; clear a box to delete it. Enter moves down, arrow keys move between days.</li>
         <li>The <strong>Logged this week</strong> card shows your hours against your expected week. Bank holidays and days off are marked in the grid.</li>
       </ol>
@@ -151,10 +152,10 @@ const SECTIONS = [
         <li>Click <strong>Stop</strong>. The time is rounded to the nearest 5 minutes; check it and click <strong>Save time</strong>.</li>
         <li><strong>Cancel</strong> keeps it running; <strong>Discard timer</strong> throws it away. Only one timer runs at a time.</li>
       </ol>
-      <h3>Internal time, and campaigns for both units</h3>
+      <h3>Internal time, and projects for both units</h3>
       <ul>
-        <li><strong>Internal</strong> (no campaign) is for team meetings, admin and training. It counts towards capacity, not against either budget.</li>
-        <li>On a Marketing campaign for <strong>Education + Planning Center</strong> you log one entry; it is split 70% Education / 30% Planning Center behind the scenes.</li>
+        <li><strong>Internal</strong> (no project) is for team meetings, admin and training. It counts towards capacity, not against either budget.</li>
+        <li>On a Marketing project for <strong>Education + Planning Center</strong> you log one entry; it is split 70% Education / 30% Planning Center behind the scenes.</li>
       </ul>
       <h3>Correcting entries</h3>
       <p>Use <strong>Edit</strong> or <strong>Delete</strong> in <strong>Entries this week</strong> on My time. A grid box with a dashed outline holds several entries; typing a new total merges them.</p>
@@ -205,15 +206,15 @@ const SECTIONS = [
     html: `
       <p><a href="#/dashboards">Dashboards</a> show how Marketing's hours compare with each business unit's budget for a month or quarter.</p>
       <p><strong>Choose the period first</strong> with ‹ › or the month box, and switch between <strong>Month</strong> and <strong>This quarter</strong>. Every figure follows that choice. <strong>Both units / Education / Planning Center</strong> narrows the whole page to one unit (clicking a unit's budget bar does the same).</p>
-      <p>The <strong>headline figures</strong> at the top answer the main questions at a glance: each unit's budget used, the team's productive time used and campaigns over plan, with the change since the previous month or quarter. The menu under the controls jumps to each section.</p>
+      <p>The <strong>headline figures</strong> at the top answer the main questions at a glance: each unit's budget used, the team's productive time used and projects over plan, with the change since the previous month or quarter. The menu under the controls jumps to each section.</p>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Section</th><th>What it shows</th></tr></thead>
         <tbody>
-          <tr><td>Budget overview</td><td>Hours used against each unit's budget: green within budget, amber over 80%, red at 100% or more. Internal hours shown separately. Click a unit to filter the campaigns below.</td></tr>
+          <tr><td>Budget overview</td><td>Hours used against each unit's budget: green within budget, amber over 80%, red at 100% or more. Internal hours shown separately. Click a unit to filter the projects below.</td></tr>
           <tr><td>Trend</td><td>Hours per unit over the last 6 or 12 months, with each month's budget as a dashed line. Hover for exact figures, or use <strong>Show as table</strong>.</td></tr>
-          <tr><td>By campaign</td><td>Campaigns active in the period: planned hours, hours this period and total so far. <strong>Over plan</strong> flags those past their planned hours.</td></tr>
-          <tr><td>Team capacity</td><td>Per person: working hours (after bank holidays and time off), productive hours, campaign hours logged and % used.</td></tr>
-          <tr><td>Upcoming</td><td>Campaigns starting in the next 1, 2 or 3 months, with planned hours.</td></tr>
+          <tr><td>By project</td><td>Projects active in the period: planned hours, hours this period and total so far. <strong>Over plan</strong> flags those past their planned hours.</td></tr>
+          <tr><td>Team capacity</td><td>Per person: working hours (after bank holidays and time off), productive hours, project hours logged and % used.</td></tr>
+          <tr><td>Upcoming</td><td>Projects starting in the next 1, 2 or 3 months, with planned hours.</td></tr>
         </tbody>
       </table></div>
       <h3>How budgets are calculated</h3>
@@ -246,10 +247,10 @@ const SECTIONS = [
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Setting</th><th>What it changes</th></tr></thead>
         <tbody>
-          <tr><td>Team rules: productive time (80%)</td><td>Share of working hours available for campaign work</td></tr>
+          <tr><td>Team rules: productive time (80%)</td><td>Share of working hours available for project work</td></tr>
           <tr><td>Team rules: budget split (70 / 30)</td><td>How productive hours divide into each unit's monthly budget</td></tr>
           <tr><td>Departments</td><td>The list of departments and the business unit each belongs to. Each person's department is set in <strong>People</strong></td></tr>
-          <tr><td>Team rules: split for campaigns for both (70 / 30)</td><td>How hours on Marketing campaigns for both Education and Planning Center are divided; changes apply only to hours logged afterwards</td></tr>
+          <tr><td>Team rules: split for projects for both (70 / 30)</td><td>How hours on Marketing projects for both Education and Planning Center are divided; changes apply only to hours logged afterwards</td></tr>
           <tr><td>Monthly budgets</td><td>Automatic. Type a number to override a month; <strong>Back to automatic</strong> undoes it</td></tr>
           <tr><td>Holidays &amp; time off</td><td>The team calendar shows each person's bank holidays (Madrid or England) and time off; click a bank holiday to rename or delete it. Bank holidays are loaded to the end of 2027; add new ones in <strong>Bank holidays by year</strong> once the dates are published.</td></tr>
         </tbody>
@@ -258,7 +259,7 @@ const SECTIONS = [
       <ol>
         <li>Monday: check last week's hours in <strong>My time → Team time</strong>; click a person to see their entries.</li>
         <li>Follow up on missing days; you can correct entries yourself if needed.</li>
-        <li>Check Campaigns for anything over its planned hours.</li>
+        <li>Check Projects for anything over its planned hours.</li>
       </ol>
       <h3>Monthly routine</h3>
       <ol>
@@ -273,7 +274,7 @@ const SECTIONS = [
     html: `
       <h3>The rules in short</h3>
       <ol>
-        <li>Every piece of work sits in a campaign with the right department and "for"; non-campaign work is Internal.</li>
+        <li>Every piece of work sits in a project with the right department and "for"; non-project work is Internal.</li>
         <li>Every task has one assignee and, where there's a deadline, a due date.</li>
         <li>Log all your working hours, daily if possible, complete by Friday afternoon.</li>
         <li>Add your time off as soon as it's agreed.</li>
@@ -287,14 +288,14 @@ const SECTIONS = [
           <tr><td>Something looks out of date</td><td>Refresh with Cmd+Shift+R (Ctrl+Shift+R on Windows)</td></tr>
           <tr><td>The sign-in email doesn't arrive</td><td>Check spam; wait if you see "too many sign-in emails"; then tell Carlota</td></tr>
           <tr><td>I can't type in a box on My time</td><td>You may be viewing someone else's week: set <strong>Person</strong> back to yourself</td></tr>
-          <tr><td>I can't delete a task or campaign</td><td>It has hours logged; set it to Done or On hold</td></tr>
+          <tr><td>I can't delete a task or project</td><td>It has hours logged; set it to Done or On hold</td></tr>
           <tr><td>I don't see Settings, or can't edit</td><td>Your role doesn't allow it; ask Carlota</td></tr>
         </tbody>
       </table></div>
       <h3>FAQ</h3>
       <p><strong>Can I see my teammates' hours?</strong> Yes, with the Person picker on My time. Only the Admin can change someone else's entries.</p>
-      <p><strong>Do I need to log hours on a specific task?</strong> Yes. Campaign time always goes on a task or subtask, so every hour can be traced. If no task fits, add one on the campaign page first. Only Internal time has no task.</p>
-      <p><strong>What if I worked on something for both Education and Planning Center?</strong> Use a Marketing campaign for <strong>Education + Planning Center</strong>: your one entry is split 70 / 30 automatically.</p>
+      <p><strong>Do I need to log hours on a specific task?</strong> Yes. Project time always goes on a task or subtask, so every hour can be traced. If no task fits, add one on the project page first. Only Internal time has no task.</p>
+      <p><strong>What if I worked on something for both Education and Planning Center?</strong> Use a Marketing project for <strong>Education + Planning Center</strong>: your one entry is split 70 / 30 automatically.</p>
       <p><strong>Does the tool replace Personio?</strong> No. Get holidays approved in Personio as usual, then add them here.</p>`,
   },
 ];

@@ -25,7 +25,7 @@ export function budgetBars(units, selected) {
     const width = p == null ? 0 : Math.min(100, p);
     return `
       <button type="button" class="budget-row ${selected === unit.key ? 'is-selected' : ''}" data-unit="${unit.key}"
-        aria-pressed="${selected === unit.key}" title="Show ${esc(unit.label)} campaigns below">
+        aria-pressed="${selected === unit.key}" title="Show ${esc(unit.label)} projects below">
         <span class="budget-row-head">
           <span class="budget-unit"><span class="swatch swatch-${unit.key}" aria-hidden="true"></span>${esc(unit.label)}</span>
           <span class="budget-figures"><strong>${fmtHours(unit.used)}</strong>${unit.budget ? ` of ${fmtHours(unit.budget)}` : ''}${p == null ? '' : ` · ${p}%`}</span>

@@ -58,11 +58,11 @@ export function renderLogin(el, { error } = {}) {
           <span class="brand-mark" aria-hidden="true">A</span>
           <span class="brand-name">DSD Atlas</span>
         </div>
-        <h2>Where DSD Marketing plans its work and tracks its time.</h2>
+        <h2>Where every DSD team plans its projects and tracks its work.</h2>
         <ul class="welcome-points">
-          <li><strong>Campaigns and tasks</strong><span>Boards, lists and everything assigned to you in one place.</span></li>
+          <li><strong>Projects and tasks</strong><span>Boards, lists and everything assigned to you in one place.</span></li>
           <li><strong>Time logging</strong><span>A weekly timesheet and a timer on any task.</span></li>
-          <li><strong>Capacity and budgets</strong><span>Hours for Education and Planning Center, kept within budget.</span></li>
+          <li><strong>Capacity and budgets</strong><span>Hours and team capacity, kept within budget.</span></li>
           <li><strong>Dashboards</strong><span>Clear figures for the directors, ready to present.</span></li>
         </ul>
       </aside>

@@ -5,10 +5,10 @@ import { parseHours, hoursText, createEntry, updateEntry } from '../time.js';
 import { esc, formDialog, errorMessage } from '../ui.js';
 
 const INTERNAL = 'internal';
-const NEEDS_TASK = 'Choose a task. Campaign time always goes on a task; if none fits, add one on the campaign page first.';
+const NEEDS_TASK = 'Choose a task. Project time always goes on a task; if none fits, add one on the project page first.';
 
 async function loadCampaigns() {
-  const { data, error } = await supabase.from('campaigns').select('id, name, budget, department_id, for_department_id, status').order('name');
+  const { data, error } = await supabase.from('campaigns').select('id, name, budget, department_id, for_department_id, status, archived_at').order('name');
   if (error) throw error;
   return data;
 }
@@ -22,12 +22,14 @@ async function loadTasks(campaignId) {
 }
 
 function campaignOptions(campaigns, selected) {
-  const option = c => `<option value="${esc(c.id)}"${c.id === selected ? ' selected' : ''}>${esc(c.name)}</option>`;
-  const active = campaigns.filter(c => c.status === 'planned' || c.status === 'in_progress');
+  const option = c => `<option value="${esc(c.id)}"${c.id === selected ? ' selected' : ''}>${esc(c.name)}${c.archived_at ? ' (archived)' : ''}</option>`;
+  // Archived projects only show when an existing entry is already on one
+  campaigns = campaigns.filter(c => !c.archived_at || c.id === selected);
+  const active = campaigns.filter(c => !c.archived_at && (c.status === 'planned' || c.status === 'in_progress'));
   const other = campaigns.filter(c => !active.includes(c));
   return `
-    <option value="">Choose a campaign…</option>
-    <option value="${INTERNAL}"${selected === INTERNAL ? ' selected' : ''}>Internal (no campaign)</option>
+    <option value="">Choose a project…</option>
+    <option value="${INTERNAL}"${selected === INTERNAL ? ' selected' : ''}>Internal (no project)</option>
     ${active.length ? `<optgroup label="Active">${active.map(option).join('')}</optgroup>` : ''}
     ${other.length ? `<optgroup label="Done or on hold">${other.map(option).join('')}</optgroup>` : ''}`;
 }
@@ -52,10 +54,10 @@ function wireCampaignTask(form, selectedTask) {
       const campaign = campaignSelect.value;
       const tasks = await loadTasks(campaign);
       if (!campaign || campaign === INTERNAL) {
-        taskSelect.innerHTML = `<option value="">${campaign ? 'No task for Internal time' : 'Choose a campaign first'}</option>`;
+        taskSelect.innerHTML = `<option value="">${campaign ? 'No task for Internal time' : 'Choose a project first'}</option>`;
         taskSelect.disabled = true;
       } else if (!tasks.length) {
-        taskSelect.innerHTML = '<option value="">This campaign has no tasks yet</option>';
+        taskSelect.innerHTML = '<option value="">This project has no tasks yet</option>';
         taskSelect.disabled = true;
       } else {
         taskSelect.innerHTML = taskOptions(tasks, keep);
@@ -70,7 +72,7 @@ function wireCampaignTask(form, selectedTask) {
 }
 
 const campaignTaskFields = (campaigns, campaignId) => `
-  <label class="field"><span>Campaign</span>
+  <label class="field"><span>Project</span>
     <select name="campaign_id">${campaignOptions(campaigns, campaignId)}</select></label>
   <label class="field"><span>Task</span>
     <select name="task_id" disabled></select></label>`;
@@ -113,7 +115,7 @@ export async function openTimeEntryForm({
         <input name="note" maxlength="500" value="${esc(values.note || '')}"></label>`,
     onSubmit: async form => {
       const { campaign_id, task_id } = readCampaignTask(form);
-      if (campaign_id === undefined) return 'Choose a campaign, or Internal for non-campaign work.';
+      if (campaign_id === undefined) return 'Choose a project, or Internal for non-project work.';
       if (campaign_id && !task_id) return NEEDS_TASK;
       const minutes = parseHours(form.elements.hours.value);
       if (minutes === null) return 'Type hours as a number, like 1.5 or 1:30.';
@@ -147,7 +149,7 @@ export async function pickCampaignTask({ title = 'Add a row', submitLabel = 'Add
     body: campaignTaskFields(campaigns, ''),
     onSubmit: form => {
       const picked = readCampaignTask(form);
-      if (picked.campaign_id === undefined) return 'Choose a campaign, or Internal for non-campaign work.';
+      if (picked.campaign_id === undefined) return 'Choose a project, or Internal for non-project work.';
       if (picked.campaign_id && !picked.task_id) return NEEDS_TASK;
       const campaign = campaigns.find(c => c.id === picked.campaign_id) || null;
       const taskOption = form.elements.task_id.selectedOptions[0];

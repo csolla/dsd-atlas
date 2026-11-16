@@ -23,7 +23,7 @@ const SECTIONS = [
   { id: 'headline', label: 'Headlines' },
   { id: 'budget', label: 'Budget' },
   { id: 'trend', label: 'Trend' },
-  { id: 'campaigns', label: 'Campaigns' },
+  { id: 'campaigns', label: 'Projects' },
   { id: 'capacity', label: 'Team' },
   { id: 'upcoming', label: 'Upcoming' },
 ];
@@ -164,7 +164,7 @@ function draw(el, data) {
     </section>
     <section class="card dash-section" id="dash-budget">
       <h2>Budget overview</h2>
-      <p class="muted small">Hours used against each unit's budget for ${esc(data.period.label)}. Hours on campaigns for both are already split. Click a unit to focus the whole page on it.</p>
+      <p class="muted small">Hours used against each unit's budget for ${esc(data.period.label)}. Hours on projects for both are already split. Click a unit to focus the whole page on it.</p>
       <div class="budget-bars" data-budget-bars></div>
       <p class="internal-line" data-internal></p>
     </section>
@@ -181,14 +181,14 @@ function draw(el, data) {
     </section>
     <section class="card dash-section" id="dash-campaigns">
       <div class="section-head">
-        <h2>By campaign</h2>
+        <h2>By project</h2>
         <span data-unit-filter></span>
       </div>
       <div data-campaigns></div>
     </section>
     <section class="card dash-section" id="dash-capacity">
       <h2>Team capacity</h2>
-      <p class="muted small">Productive hours available after time off and bank holidays, against campaign hours logged in the period.</p>
+      <p class="muted small">Productive hours available after time off and bank holidays, against project hours logged in the period.</p>
       <div data-capacity></div>
     </section>
     <section class="card dash-section" id="dash-upcoming">
@@ -310,7 +310,7 @@ function drawHeadlines(box, data) {
     <div class="kpi">
       <span class="kpi-label">Team productive time used</span>
       <strong class="kpi-value">${now.pct == null ? '—' : `${now.pct}%`}</strong>
-      <span class="kpi-sub">${fmtHours(Math.round(now.campaignHours))} of ${fmtHours(Math.round(now.productiveHours))} on campaigns</span>
+      <span class="kpi-sub">${fmtHours(Math.round(now.campaignHours))} of ${fmtHours(Math.round(now.productiveHours))} on projects</span>
       ${delta(now.pct, before.pct)}
     </div>`);
 
@@ -318,7 +318,7 @@ function drawHeadlines(box, data) {
   const over = active.filter(c => c.overPlan);
   tiles.push(`
     <div class="kpi ${over.length ? 'kpi-alert' : ''}">
-      <span class="kpi-label">Campaigns over plan</span>
+      <span class="kpi-label">Projects over plan</span>
       <strong class="kpi-value">${over.length}</strong>
       <span class="kpi-sub">of ${active.length} active in the period${over.length ? `: ${esc(over.slice(0, 2).map(c => c.name).join(', '))}${over.length > 2 ? '…' : ''}` : ''}</span>
     </div>`);
@@ -460,7 +460,7 @@ function drawCampaigns(box, data) {
   const rows = focusCampaigns(campaignFigures(data));
   const container = box.querySelector('[data-campaigns]');
   if (!rows.length) {
-    container.innerHTML = `<p class="muted">No campaigns ${view.focus ? `for ${esc(UNITS[view.focus])} ` : ''}in this period.</p>`;
+    container.innerHTML = `<p class="muted">No projects ${view.focus ? `for ${esc(UNITS[view.focus])} ` : ''}in this period.</p>`;
     return;
   }
   const hoursThisPeriod = c => (view.focus === 'education' ? c.periodEdu : view.focus === 'planning_center' ? c.periodPc : c.period);
@@ -469,7 +469,7 @@ function drawCampaigns(box, data) {
   container.innerHTML = `
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Campaign</th><th>For</th><th>Dates</th><th class="num">Planned</th>
+        <thead><tr><th>Project</th><th>For</th><th>Dates</th><th class="num">Planned</th>
           <th class="num">${view.focus ? `${esc(UNITS[view.focus])} hours` : 'Hours'} this period</th><th class="num">Total so far</th></tr></thead>
         <tbody>
           ${rows.map(c => `
@@ -485,7 +485,7 @@ function drawCampaigns(box, data) {
         </tbody>
       </table>
     </div>
-    ${view.focus ? '<p class="muted small table-note">Campaigns for both show only this budget\'s share of their hours this period.</p>' : ''}`;
+    ${view.focus ? '<p class="muted small table-note">Projects for both show only this budget\'s share of their hours this period.</p>' : ''}`;
 }
 
 function drawCapacity(box, data) {
@@ -508,7 +508,7 @@ function drawCapacity(box, data) {
     <div class="table-wrap">
       <table class="table capacity-table">
         <thead><tr><th>Person</th><th class="num">Working hours</th><th class="num">Productive (${pct}%)</th>
-          <th class="num">Campaign hours</th><th class="meter-col">Used</th>
+          <th class="num">Project hours</th><th class="meter-col">Used</th>
           ${unitHead}</tr></thead>
         <tbody>
           ${rows.map(r => {
@@ -544,14 +544,14 @@ function drawUpcoming(box, data) {
   const rows = focusCampaigns(upcomingFigures(data));
   const container = box.querySelector('[data-upcoming-list]');
   if (!rows.length) {
-    container.innerHTML = `<p class="muted">No campaigns start between ${esc(fmtDate(data.period.to))} and ${esc(fmtDate(data.upcomingTo))}.</p>`;
+    container.innerHTML = `<p class="muted">No projects start between ${esc(fmtDate(data.period.to))} and ${esc(fmtDate(data.upcomingTo))}.</p>`;
     return;
   }
   const byUnit = key => rows.filter(c => c.budget === key).reduce((t, c) => t + Number(c.planned_hours), 0);
   container.innerHTML = `
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Campaign</th><th>For</th><th>Starts</th><th>Ends</th><th class="num">Planned hours</th></tr></thead>
+        <thead><tr><th>Project</th><th>For</th><th>Starts</th><th>Ends</th><th class="num">Planned hours</th></tr></thead>
         <tbody>
           ${rows.map(c => `
             <tr><td><strong>${esc(c.name)}</strong></td><td>${forTag(c)}</td>
@@ -589,10 +589,10 @@ function exportSheets(data) {
       ],
     },
     {
-      name: 'Campaigns',
+      name: 'Projects',
       period: label,
       rows: [
-        ['Campaign', 'For', 'Start', 'End', 'Planned hours', 'Hours this period', 'Education share', 'Planning Center share', 'Total so far', 'Over plan'],
+        ['Project', 'For', 'Start', 'End', 'Planned hours', 'Hours this period', 'Education share', 'Planning Center share', 'Total so far', 'Over plan'],
         ...campaignFigures(data).map(c => [c.name, forLabel(c), c.start_date || '', c.end_date || '',
           h(c.planned_hours), h(c.period), h(c.periodEdu), h(c.periodPc), h(c.total), c.overPlan ? 'Yes' : '']),
       ],
@@ -602,16 +602,16 @@ function exportSheets(data) {
       period: label,
       rows: [
         ['Person', 'Working days', 'Bank holidays', 'Days off', 'Working hours', `Productive hours (${data.settings.productive_pct ?? 80}%)`,
-          'Campaign hours', '% of productive used', 'Education', 'Planning Center', 'Other departments', 'Internal'],
+          'Project hours', '% of productive used', 'Education', 'Planning Center', 'Other departments', 'Internal'],
         ...capacityFigures(data).map(r => [r.person.name, r.available.workDays, r.available.holidayDays, r.available.offDays,
           h(r.available.hours), h(r.productiveHours), h(r.campaign), r.used ?? '', h(r.edu), h(r.pc), h(r.other), h(r.internal)]),
       ],
     },
     {
       name: 'Upcoming',
-      period: `Campaigns starting after ${fmtDate(data.period.to)}, up to ${fmtDate(data.upcomingTo)}`,
+      period: `Projects starting after ${fmtDate(data.period.to)}, up to ${fmtDate(data.upcomingTo)}`,
       rows: [
-        ['Campaign', 'For', 'Start', 'End', 'Planned hours'],
+        ['Project', 'For', 'Start', 'End', 'Planned hours'],
         ...upcomingFigures(data).map(c => [c.name, forLabel(c), c.start_date, c.end_date || '', h(c.planned_hours)]),
       ],
     },

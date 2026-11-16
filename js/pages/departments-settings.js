@@ -11,8 +11,8 @@ import { BUSINESS_UNITS, loadDepartments } from '../departments.js';
 export async function renderDepartments(el) {
   el.innerHTML = `
     <div class="people-intro">
-      <p class="muted">Every person and every campaign belongs to one department, and each department to one business unit.
-        A campaign can also be <strong>for</strong> another department: Marketing campaigns are for Education, Planning Center, or both.</p>
+      <p class="muted">Every person and every project belongs to one department, and each department to one business unit.
+        A project can also be <strong>for</strong> another department: Marketing projects are for Education, Planning Center, or both.</p>
       <button class="btn btn-primary" type="button" data-add>Add department</button>
     </div>
     <div data-list><p class="muted">Loading departments…</p></div>`;
@@ -39,7 +39,7 @@ async function draw(el) {
   list.innerHTML = `
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Department</th><th>Business unit</th><th class="num">People</th><th class="num">Campaigns</th><th></th></tr></thead>
+        <thead><tr><th>Department</th><th>Business unit</th><th class="num">People</th><th class="num">Projects</th><th></th></tr></thead>
         <tbody>
           ${byUnit.map(d => `
             <tr data-id="${esc(d.id)}">
@@ -56,7 +56,7 @@ async function draw(el) {
         </tbody>
       </table>
     </div>
-    <p class="muted small table-note">A department can be deleted once nobody and no campaign belongs to it. The five starting departments are kept.</p>`;
+    <p class="muted small table-note">A department can be deleted once nobody and no project belongs to it. The five starting departments are kept.</p>`;
 
   const find = button => state.departments.find(d => d.id === button.closest('tr').dataset.id);
   list.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => openForm(el, find(button))));
@@ -91,7 +91,7 @@ function openForm(el, dept) {
 async function remove(el, dept) {
   const ok = await confirmDialog({
     title: `Delete ${dept.name}?`,
-    message: 'Nobody and no campaign belongs to it, so nothing else changes. You can add it again later.',
+    message: 'Nobody and no project belongs to it, so nothing else changes. You can add it again later.',
     confirmLabel: 'Delete',
     danger: true,
   });

@@ -12,14 +12,14 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const CALENDARS = { Madrid: 'Madrid', England: 'England' };
 const ROLE_HELP = {
   admin: 'Everything, including Settings, budgets and editing anyone\'s time.',
-  member: 'Campaigns, tasks, comments and their own time and time off. Can view Dashboards.',
-  director: 'Dashboards only. Can\'t see or change campaigns, tasks or time.',
+  member: 'Projects, tasks, comments and their own time and time off. Can view Dashboards.',
+  director: 'Dashboards only. Can\'t see or change projects, tasks or time.',
 };
 // What someone gains or loses when their role changes
 const ROLE_CHANGE = {
-  director: 'will only see Dashboards. They won\'t see campaigns, tasks or their time, and can\'t log hours.',
-  member: 'will be able to work on campaigns and tasks and log their own time, but not open Settings.',
-  admin: 'will have full control, including Settings, budgets, deleting campaigns and editing anyone\'s time.',
+  director: 'will only see Dashboards. They won\'t see projects, tasks or their time, and can\'t log hours.',
+  member: 'will be able to work on projects and tasks and log their own time, but not open Settings.',
+  admin: 'will have full control, including Settings, budgets, deleting projects and editing anyone\'s time.',
 };
 
 const isDefault = p => Number(p.hours_per_day) === 8 && (p.working_days || [1, 2, 3, 4, 5]).join() === '1,2,3,4,5'

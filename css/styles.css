@@ -576,6 +576,7 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .unit-dot-planning_center { background: var(--pc); }
 .unit-dot-shared { background: var(--shared); }
 .unit-dot-other { background: var(--muted); }
+.archived-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--radius); background: var(--surface-2); color: var(--text); font-size: 14px; }
 .subtask-mark { color: var(--muted); font-weight: 400; margin-right: 6px; }
 .parent-line { color: var(--muted); font-size: 12px; margin-left: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .my-task .task-title { font-weight: 500; }
