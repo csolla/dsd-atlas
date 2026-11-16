@@ -13,9 +13,11 @@ DSD's project management tool: campaigns (projects), tasks, time logging and dir
 
 All five build milestones are complete (October 2026). The original PRD, milestone prompts and milestone logs were moved out of this folder to `../archive/marketing-pm-tool-build-plan/`. They are a historical record, not current documentation: the code has moved past some of their decisions, and nothing in the code depends on them. The milestone logs are still the best summary of why things were built the way they were.
 
-- Database changes so far: `supabase/migrations/01` to `10`. The next one is `11`.
+- Database changes so far: `supabase/migrations/01` to `11`. The next one is `12`.
+- **Departments (must-have 1, `11_departments.sql`):** business units are Education, DSD Center and Corporate; each department (Marketing, Education, Planning Center, Delight, Corporate, plus any the admin adds) belongs to one. Every person and campaign has a `department_id`; a campaign's `for_department_id` says who the work is for (own department by default). Marketing campaigns can be for any department; empty `for_department_id` = both Education and Planning Center, split by `team_settings.shared_split_education`. Marketing work for Delight counts against the Planning Center budget; for any other department, against neither budget (`budget = 'other'`) but still counts as campaign work in Marketing's capacity. Procurement is part of Corporate, not a separate department. There is no "Shared" label any more.
+- The old `business_unit` columns on `campaigns` and `time_entries` are now `budget` (education / planning_center / shared / internal / other), set by the database, never typed. `other` = not one of Marketing's budgets. Capacity, budgets, Team time, Dashboards and the Friday timesheet reminder are Marketing-only until must-have 11 (hours for every team). Helpers live in `js/departments.js`.
 - Campaign time must always be on a task (constraint `campaign_time_needs_task`); only Internal time has no task.
-- Capacity rules exist twice and must be kept in step: `js/capacity.js` (`availability`, `monthBudget`) and the SQL functions `person_working_hours` / `unit_month_budget`.
+- Capacity rules exist twice and must be kept in step: `js/capacity.js` (`availability`, `monthBudget`, `capacityPeople`) and the SQL functions `person_working_hours` / `unit_month_budget` (both count active Marketing people who count in capacity).
 - When embedding a subtask's parent task in a Supabase request, name it by column (`parent:parent_id(...)`), not by constraint name.
 
 <!-- bm-design-system:start -->

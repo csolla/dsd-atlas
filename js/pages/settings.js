@@ -1,9 +1,11 @@
 import { renderPeople } from './people.js';
 import { renderCapacitySettings } from './capacity-settings.js';
+import { renderDepartments } from './departments-settings.js';
 
-// Capacity (Admin): people, team rules, monthly budgets, holidays & time off
+// Capacity (Admin): people, departments, team rules, monthly budgets, holidays & time off
 export const CAPACITY_SECTIONS = {
   people: 'People',
+  departments: 'Departments',
   rules: 'Team rules',
   budgets: 'Monthly budgets',
   calendar: 'Holidays & time off',
@@ -19,5 +21,6 @@ export function renderCapacityPage(el, section = 'people') {
     <div data-tab></div>`;
   const body = el.querySelector('[data-tab]');
   if (section === 'people') renderPeople(body);
+  else if (section === 'departments') renderDepartments(body);
   else renderCapacitySettings(body, section);
 }

@@ -6,7 +6,8 @@ import {
   monthBudget, capacityPeople, loadBudgets, loadHolidays, loadTimeOff, loadTeamSettings,
 } from '../capacity.js';
 import { budgetBars, budgetStatus, trendChart, trendTable } from '../charts.js';
-import { esc, buTag, avatar, fmtDate, fmtHours, toast, errorMessage, BUSINESS_UNITS } from '../ui.js';
+import { esc, avatar, fmtDate, fmtHours, toast, errorMessage } from '../ui.js';
+import { BUDGETS, forTag, forLabel, isMarketingPerson, departmentByKey } from '../departments.js';
 
 // Open Dashboards on a given month (used by budget alerts)
 export function showDashboardMonth(month) {
@@ -30,6 +31,9 @@ let presentKeys = null;
 
 const UNITS = { education: 'Education', planning_center: 'Planning Center' };
 const sum = (list, field) => list.reduce((total, row) => total + Number(row[field] || 0), 0);
+
+// Internal hours of Marketing people (other teams' internal time isn't Marketing's)
+const marketingInternal = data => sum(data.entries.filter(e => isMarketingPerson(state.people.find(p => p.id === e.person_id))), 'internal_hours');
 
 export async function renderDashboards(el, { present = false } = {}) {
   document.body.classList.toggle('presenting', present);
@@ -57,8 +61,8 @@ export async function renderDashboards(el, { present = false } = {}) {
         <button type="button" data-mode="month" aria-pressed="${view.mode === 'month'}">Month</button>
         <button type="button" data-mode="quarter" aria-pressed="${view.mode === 'quarter'}">This quarter</button>
       </div>
-      <div class="view-switch" role="group" aria-label="Business unit">
-        <button type="button" data-focus="" aria-pressed="${!view.focus}">Both units</button>
+      <div class="view-switch" role="group" aria-label="Budget">
+        <button type="button" data-focus="" aria-pressed="${!view.focus}">Both budgets</button>
         <button type="button" data-focus="education" aria-pressed="${view.focus === 'education'}">Education</button>
         <button type="button" data-focus="planning_center" aria-pressed="${view.focus === 'planning_center'}">Planning Center</button>
       </div>
@@ -132,14 +136,17 @@ async function loadData() {
     loadBudgets(firstMonth, lastMonth),
     query(supabase.from('monthly_unit_hours').select('*').gte('month', monthFirst(trendFrom)).lte('month', monthFirst(lastMonth))),
     query(supabase.from('time_entries')
-      .select('person_id, campaign_id, hours, education_hours, planning_center_hours, internal_hours')
+      .select('person_id, campaign_id, hours, education_hours, planning_center_hours, internal_hours, other_hours')
       .gte('entry_date', period.from).lte('entry_date', period.to)),
-    query(supabase.from('campaigns').select('id, name, business_unit, status, start_date, end_date, planned_hours').order('name')),
+    // Marketing's campaigns only, whoever they're for
+    query(supabase.from('campaigns')
+      .select('id, name, budget, department_id, for_department_id, status, start_date, end_date, planned_hours')
+      .eq('department_id', departmentByKey('marketing')?.id).order('name')),
     query(supabase.from('campaign_hours').select('*')),
     loadHolidays(windowFrom, period.to),
     loadTimeOff({ from: windowFrom, to: period.to }),
     loadTeamSettings(),
-    query(supabase.from('time_entries').select('person_id, education_hours, planning_center_hours')
+    query(supabase.from('time_entries').select('person_id, education_hours, planning_center_hours, other_hours')
       .gte('entry_date', previous.from).lte('entry_date', previous.to)),
   ]);
   return {
@@ -157,7 +164,7 @@ function draw(el, data) {
     </section>
     <section class="card dash-section" id="dash-budget">
       <h2>Budget overview</h2>
-      <p class="muted small">Hours used against each unit's budget for ${esc(data.period.label)}. Shared hours are already split. Click a unit to focus the whole page on it.</p>
+      <p class="muted small">Hours used against each unit's budget for ${esc(data.period.label)}. Hours on campaigns for both are already split. Click a unit to focus the whole page on it.</p>
       <div class="budget-bars" data-budget-bars></div>
       <p class="internal-line" data-internal></p>
     </section>
@@ -294,7 +301,7 @@ function drawHeadlines(box, data) {
       t + productive(availability(p, period.from, period.to, data.holidays, data.timeOff).hours, data.settings), 0);
     const ids = new Set(people.map(p => p.id));
     const campaignHours = entries.filter(e => ids.has(e.person_id))
-      .reduce((t, e) => t + Number(e.education_hours) + Number(e.planning_center_hours), 0);
+      .reduce((t, e) => t + Number(e.education_hours) + Number(e.planning_center_hours) + Number(e.other_hours || 0), 0);
     return { productiveHours, campaignHours, pct: pct(campaignHours, productiveHours) };
   };
   const now = team(data.period);
@@ -319,9 +326,9 @@ function drawHeadlines(box, data) {
   box.querySelector('[data-kpis]').innerHTML = tiles.join('');
 }
 
-// Campaigns of the focused unit (Shared ones count for both)
+// Campaigns of the focused budget (ones for both count for each)
 function focusCampaigns(rows) {
-  return view.focus ? rows.filter(c => c.business_unit === view.focus || c.business_unit === 'shared') : rows;
+  return view.focus ? rows.filter(c => c.budget === view.focus || c.budget === 'shared') : rows;
 }
 
 // Figures, shared by the page and the export ---------------------------------------
@@ -391,7 +398,7 @@ function campaignFigures(data) {
 function capacityFigures(data) {
   const ids = new Set(data.entries.map(e => e.person_id));
   return state.people
-    .filter(p => (p.active && p.counts_in_capacity) || (ids.has(p.id) && p.counts_in_capacity))
+    .filter(p => isMarketingPerson(p) && p.counts_in_capacity && (p.active || ids.has(p.id)))
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(person => {
       const mine = data.entries.filter(e => e.person_id === person.id);
@@ -399,6 +406,7 @@ function capacityFigures(data) {
       const productiveHours = productive(available.hours, data.settings);
       const edu = sum(mine, 'education_hours');
       const pc = sum(mine, 'planning_center_hours');
+      const other = sum(mine, 'other_hours');
       // Internal time is part of the non-productive share, so only campaign
       // hours count against productive hours
       return {
@@ -406,11 +414,12 @@ function capacityFigures(data) {
         available,
         productiveHours,
         logged: sum(mine, 'hours'),
-        campaign: edu + pc,
+        campaign: edu + pc + other,
         edu,
         pc,
+        other,
         internal: sum(mine, 'internal_hours'),
-        used: productiveHours ? Math.round((edu + pc) / productiveHours * 100) : null,
+        used: productiveHours ? Math.round((edu + pc + other) / productiveHours * 100) : null,
       };
     });
 }
@@ -433,7 +442,7 @@ function drawBudget(box, data) {
   }));
   box.querySelector('[data-internal]').hidden = Boolean(view.focus);
   box.querySelector('[data-internal]').innerHTML =
-    `<span class="swatch swatch-internal" aria-hidden="true"></span> <strong>Internal</strong> ${fmtHours(sum(data.entries, 'internal_hours'))}
+    `<span class="swatch swatch-internal" aria-hidden="true"></span> <strong>Internal</strong> ${fmtHours(marketingInternal(data))}
      <span class="muted">· meetings, admin and training; counts towards capacity, not against either budget</span>`;
 }
 
@@ -460,13 +469,13 @@ function drawCampaigns(box, data) {
   container.innerHTML = `
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Campaign</th><th>Business unit</th><th>Dates</th><th class="num">Planned</th>
+        <thead><tr><th>Campaign</th><th>For</th><th>Dates</th><th class="num">Planned</th>
           <th class="num">${view.focus ? `${esc(UNITS[view.focus])} hours` : 'Hours'} this period</th><th class="num">Total so far</th></tr></thead>
         <tbody>
           ${rows.map(c => `
             <tr>
               <td>${name(c)}</td>
-              <td>${buTag(c.business_unit)}</td>
+              <td>${forTag(c)}</td>
               <td class="nowrap muted">${c.start_date ? esc(fmtDate(c.start_date)) : ''}${c.end_date ? ` – ${esc(fmtDate(c.end_date))}` : ''}</td>
               <td class="num">${fmtHours(c.planned_hours)}</td>
               <td class="num"><strong>${fmtHours(hoursThisPeriod(c))}</strong></td>
@@ -476,7 +485,7 @@ function drawCampaigns(box, data) {
         </tbody>
       </table>
     </div>
-    ${view.focus ? '<p class="muted small table-note">Shared campaigns show only this unit\'s share of their hours this period.</p>' : ''}`;
+    ${view.focus ? '<p class="muted small table-note">Campaigns for both show only this budget\'s share of their hours this period.</p>' : ''}`;
 }
 
 function drawCapacity(box, data) {
@@ -492,7 +501,7 @@ function drawCapacity(box, data) {
   // With a unit in focus, only that unit's hours are shown per person
   const columns = view.focus === 'education' ? [['edu', 'Education']]
     : view.focus === 'planning_center' ? [['pc', 'Planning Center']]
-      : [['edu', 'Education'], ['pc', 'Planning Center'], ['internal', 'Internal']];
+      : [['edu', 'Education'], ['pc', 'Planning Center'], ['other', 'Other departments'], ['internal', 'Internal']];
   const unitHead = columns.map(([, label]) => `<th class="num">${label}</th>`).join('');
   const unitCells = (r, tag = 'td') => columns.map(([key]) => `<${tag} class="num">${fmtHours(r[key])}</${tag}>`).join('');
   container.innerHTML = `
@@ -523,7 +532,7 @@ function drawCapacity(box, data) {
         <tfoot>
           <tr><th>Team</th><th class="num">${fmtHours(total('available'))}</th><th class="num">${fmtHours(total('productiveHours'))}</th>
             <th class="num">${fmtHours(total('campaign'))}</th><th class="meter-col">${teamUsed}</th>
-            ${unitCells({ edu: total('edu'), pc: total('pc'), internal: total('internal') }, 'th')}</tr>
+            ${unitCells({ edu: total('edu'), pc: total('pc'), other: total('other'), internal: total('internal') }, 'th')}</tr>
         </tfoot>
       </table>
     </div>
@@ -538,20 +547,20 @@ function drawUpcoming(box, data) {
     container.innerHTML = `<p class="muted">No campaigns start between ${esc(fmtDate(data.period.to))} and ${esc(fmtDate(data.upcomingTo))}.</p>`;
     return;
   }
-  const byUnit = key => rows.filter(c => c.business_unit === key).reduce((t, c) => t + Number(c.planned_hours), 0);
+  const byUnit = key => rows.filter(c => c.budget === key).reduce((t, c) => t + Number(c.planned_hours), 0);
   container.innerHTML = `
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Campaign</th><th>Business unit</th><th>Starts</th><th>Ends</th><th class="num">Planned hours</th></tr></thead>
+        <thead><tr><th>Campaign</th><th>For</th><th>Starts</th><th>Ends</th><th class="num">Planned hours</th></tr></thead>
         <tbody>
           ${rows.map(c => `
-            <tr><td><strong>${esc(c.name)}</strong></td><td>${buTag(c.business_unit)}</td>
+            <tr><td><strong>${esc(c.name)}</strong></td><td>${forTag(c)}</td>
               <td class="nowrap">${esc(fmtDate(c.start_date))}</td><td class="nowrap">${esc(fmtDate(c.end_date) || '—')}</td>
               <td class="num">${fmtHours(c.planned_hours)}</td></tr>`).join('')}
         </tbody>
       </table>
     </div>
-    <p class="muted small table-note">Planned: ${Object.entries(BUSINESS_UNITS).map(([k, label]) => `${esc(label)} ${fmtHours(byUnit(k))}`).join(' · ')}</p>`;
+    <p class="muted small table-note">Planned: ${Object.entries(BUDGETS).map(([k, label]) => `${esc(label)} ${fmtHours(byUnit(k))}`).join(' · ')}</p>`;
 }
 
 // Export ---------------------------------------------------------------------------
@@ -565,10 +574,10 @@ function exportSheets(data) {
       name: 'Budget',
       period: label,
       rows: [
-        ['Business unit', 'Hours used', 'Budget', '% used', 'Status'],
+        ['Budget', 'Hours used', 'Budget hours', '% used', 'Status'],
         ...budgetFigures(data).map(u => [u.label, h(u.used), u.budget == null ? '' : h(u.budget),
           u.budget ? Math.round(u.used / u.budget * 100) : '', budgetStatus(u.used, u.budget).label]),
-        ['Internal', h(sum(data.entries, 'internal_hours')), '', '', 'Not counted against budgets'],
+        ['Internal', h(marketingInternal(data)), '', '', 'Not counted against budgets'],
       ],
     },
     {
@@ -583,8 +592,8 @@ function exportSheets(data) {
       name: 'Campaigns',
       period: label,
       rows: [
-        ['Campaign', 'Business unit', 'Start', 'End', 'Planned hours', 'Hours this period', 'Education share', 'Planning Center share', 'Total so far', 'Over plan'],
-        ...campaignFigures(data).map(c => [c.name, BUSINESS_UNITS[c.business_unit], c.start_date || '', c.end_date || '',
+        ['Campaign', 'For', 'Start', 'End', 'Planned hours', 'Hours this period', 'Education share', 'Planning Center share', 'Total so far', 'Over plan'],
+        ...campaignFigures(data).map(c => [c.name, forLabel(c), c.start_date || '', c.end_date || '',
           h(c.planned_hours), h(c.period), h(c.periodEdu), h(c.periodPc), h(c.total), c.overPlan ? 'Yes' : '']),
       ],
     },
@@ -593,17 +602,17 @@ function exportSheets(data) {
       period: label,
       rows: [
         ['Person', 'Working days', 'Bank holidays', 'Days off', 'Working hours', `Productive hours (${data.settings.productive_pct ?? 80}%)`,
-          'Campaign hours', '% of productive used', 'Education', 'Planning Center', 'Internal'],
+          'Campaign hours', '% of productive used', 'Education', 'Planning Center', 'Other departments', 'Internal'],
         ...capacityFigures(data).map(r => [r.person.name, r.available.workDays, r.available.holidayDays, r.available.offDays,
-          h(r.available.hours), h(r.productiveHours), h(r.campaign), r.used ?? '', h(r.edu), h(r.pc), h(r.internal)]),
+          h(r.available.hours), h(r.productiveHours), h(r.campaign), r.used ?? '', h(r.edu), h(r.pc), h(r.other), h(r.internal)]),
       ],
     },
     {
       name: 'Upcoming',
       period: `Campaigns starting after ${fmtDate(data.period.to)}, up to ${fmtDate(data.upcomingTo)}`,
       rows: [
-        ['Campaign', 'Business unit', 'Start', 'End', 'Planned hours'],
-        ...upcomingFigures(data).map(c => [c.name, BUSINESS_UNITS[c.business_unit], c.start_date, c.end_date || '', h(c.planned_hours)]),
+        ['Campaign', 'For', 'Start', 'End', 'Planned hours'],
+        ...upcomingFigures(data).map(c => [c.name, forLabel(c), c.start_date, c.end_date || '', h(c.planned_hours)]),
       ],
     },
   ];

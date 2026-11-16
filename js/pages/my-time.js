@@ -7,7 +7,8 @@ import {
 } from '../time.js';
 import { availability, loadHolidays, loadTimeOff } from '../capacity.js';
 import { startTimer } from '../timer.js';
-import { esc, options, buTag, fmtHours, toast, errorMessage, confirmDialog, BUSINESS_UNITS } from '../ui.js';
+import { esc, options, fmtHours, toast, errorMessage, confirmDialog } from '../ui.js';
+import { forTag, forLabel } from '../departments.js';
 import { openTimeEntryForm, pickCampaignTask } from './time-entry-form.js';
 import { renderTeamTime } from './team-time.js';
 import { openTimeOffForm, renderTimeOffList } from './time-off.js';
@@ -288,7 +289,7 @@ async function drawSuggestions(page) {
   }
   const loadId = page.loadId;
   const { data, error } = await supabase.from('tasks')
-    .select('id, title, status, due_date, campaign_id, campaign:campaigns(id, name, business_unit), parent:parent_id(title)')
+    .select('id, title, status, due_date, campaign_id, campaign:campaigns(id, name, budget, department_id, for_department_id), parent:parent_id(title)')
     .eq('assignee_id', page.personId).neq('status', 'done');
   if (error || loadId !== page.loadId) return;
   const end = addDays(page.start, 6);
@@ -366,7 +367,7 @@ function rowLabel(row) {
     ? `${row.task.parent?.title ? `${esc(row.task.parent.title)} › ` : ''}${esc(row.task.title)}`
     : '';
   return `
-    <span class="row-campaign"><span class="unit-dot unit-dot-${esc(row.campaign.business_unit)}" title="${esc(BUSINESS_UNITS[row.campaign.business_unit])}"></span>${esc(row.campaign.name)}</span>
+    <span class="row-campaign"><span class="unit-dot unit-dot-${esc(row.campaign.budget)}" title="For ${esc(forLabel(row.campaign))}"></span>${esc(row.campaign.name)}</span>
     ${task ? `<span class="row-task">${task}</span>` : ''}`;
 }
 
@@ -532,7 +533,7 @@ async function saveCell(page, input) {
 // Entries list -----------------------------------------------------------------
 
 function splitNote(entry) {
-  if (entry.business_unit !== 'shared' || entry.education_share == null) return '';
+  if (entry.budget !== 'shared' || entry.education_share == null) return '';
   const edu = Math.round(entry.education_share * 100);
   return `<span class="muted small split-note">${edu}% Education · ${100 - edu}% Planning Center</span>`;
 }
@@ -555,7 +556,7 @@ function drawEntries(page) {
               <tr data-id="${esc(entry.id)}">
                 <td class="nowrap">${esc(weekday)} ${esc(day)}</td>
                 <td>
-                  ${entry.campaign ? buTag(entry.campaign.business_unit) : '<span class="tag tag-internal">Internal</span>'}
+                  ${entry.campaign ? forTag(entry.campaign) : '<span class="tag tag-internal">Internal</span>'}
                   ${esc(entryLabel(entry))}
                   ${splitNote(entry)}
                 </td>

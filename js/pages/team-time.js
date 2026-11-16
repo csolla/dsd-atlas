@@ -3,9 +3,10 @@ import { state } from '../state.js';
 import { todayIso } from '../tasks.js';
 import { addDays, weekStart } from '../time.js';
 import { esc, avatar, fmtHours, errorMessage } from '../ui.js';
+import { isMarketingPerson } from '../departments.js';
 
 // Team time (Admin): everyone's hours side by side, by day for a week or by
-// week for a month, with each person's split by business unit.
+// week for a month, with each person's split by budget. Marketing team only.
 const view = { mode: 'week', month: todayIso().slice(0, 7) };
 
 function parse(iso) {
@@ -84,9 +85,9 @@ export async function renderTeamTime(container, { week, onPickPerson }) {
     rerender();
   }));
 
-  const { data: entries, error } = await supabase
+  let { data: entries, error } = await supabase
     .from('time_entries')
-    .select('person_id, entry_date, minutes, education_hours, planning_center_hours, internal_hours')
+    .select('person_id, entry_date, minutes, education_hours, planning_center_hours, other_hours, internal_hours')
     .gte('entry_date', from).lte('entry_date', to);
   const grid = container.querySelector('[data-team-grid]');
   if (!grid) return;
@@ -95,11 +96,16 @@ export async function renderTeamTime(container, { week, onPickPerson }) {
     return;
   }
 
-  // Everyone who counts in capacity, plus anyone else who logged time
+  // The Marketing team: everyone who counts in capacity, plus anyone else
+  // in Marketing who logged time. Other departments' hours come with
+  // must-have 11 (hours for every team).
   const loggedIds = new Set(entries.map(e => e.person_id));
   const people = state.people
+    .filter(p => isMarketingPerson(p))
     .filter(p => loggedIds.has(p.id) || (p.active && p.role !== 'director' && p.counts_in_capacity))
     .sort((a, b) => a.name.localeCompare(b.name));
+  const shownIds = new Set(people.map(p => p.id));
+  entries = entries.filter(e => shownIds.has(e.person_id));
 
   const hoursIn = (list, col) => list
     .filter(e => e.entry_date >= col.from && e.entry_date <= col.to)
@@ -118,6 +124,7 @@ export async function renderTeamTime(container, { week, onPickPerson }) {
             <th class="num">Total</th>
             <th class="num unit-col">Education</th>
             <th class="num unit-col">Planning Center</th>
+            <th class="num unit-col">Other departments</th>
             <th class="num unit-col">Internal</th>
           </tr>
         </thead>
@@ -134,6 +141,7 @@ export async function renderTeamTime(container, { week, onPickPerson }) {
                 <td class="num total"><strong>${fmtHours(sum(mine, 'minutes') / 60)}</strong></td>
                 <td class="num unit-col">${fmtHours(sum(mine, 'education_hours'))}</td>
                 <td class="num unit-col">${fmtHours(sum(mine, 'planning_center_hours'))}</td>
+                <td class="num unit-col">${fmtHours(sum(mine, 'other_hours'))}</td>
                 <td class="num unit-col">${fmtHours(sum(mine, 'internal_hours'))}</td>
               </tr>`;
           }).join('')}
@@ -145,12 +153,13 @@ export async function renderTeamTime(container, { week, onPickPerson }) {
             <th class="num week-total">${fmtHours(sum(entries, 'minutes') / 60)}</th>
             <th class="num unit-col">${fmtHours(sum(entries, 'education_hours'))}</th>
             <th class="num unit-col">${fmtHours(sum(entries, 'planning_center_hours'))}</th>
+            <th class="num unit-col">${fmtHours(sum(entries, 'other_hours'))}</th>
             <th class="num unit-col">${fmtHours(sum(entries, 'internal_hours'))}</th>
           </tr>
         </tfoot>
       </table>
     </div>
-    <p class="muted small">Shared hours are already split into Education and Planning Center. Click a person to open their week above.</p>`;
+    <p class="muted small">Marketing team only. Hours on campaigns for both Education and Planning Center are already split. Click a person to open their week above.</p>`;
 
   grid.querySelectorAll('tr[data-person]').forEach(row =>
     row.addEventListener('click', () => onPickPerson(row.dataset.person)));

@@ -64,19 +64,30 @@ const SECTIONS = [
     id: 'campaigns',
     title: 'Campaigns and tasks',
     html: `
-      <p>Every piece of work belongs to a campaign, and every campaign to one business unit. The unit decides whose budget the hours count against.</p>
+      <p>Every piece of work belongs to a campaign. Every campaign belongs to one <strong>department</strong> (the team that owns it), and each department to one <strong>business unit</strong>:</p>
       <div class="table-wrap"><table class="table">
-        <thead><tr><th>Business unit</th><th>Use it for</th><th>Hours count against</th></tr></thead>
+        <thead><tr><th>Business unit</th><th>Departments</th></tr></thead>
         <tbody>
-          <tr><td>Education</td><td>Work for DSD's education business</td><td>Education budget</td></tr>
-          <tr><td>Planning Center</td><td>Work for Planning Center</td><td>Planning Center budget</td></tr>
-          <tr><td>Shared</td><td>Work that serves both units</td><td>Split automatically, 70% Education / 30% Planning Center</td></tr>
+          <tr><td>Education</td><td>Education</td></tr>
+          <tr><td>DSD Center</td><td>Planning Center, Delight</td></tr>
+          <tr><td>Corporate</td><td>Corporate, Marketing</td></tr>
+        </tbody>
+      </table></div>
+      <p>A campaign also says who the work is <strong>for</strong>. Usually that's its own department. Marketing campaigns can be for any department, and that decides whose budget Marketing's hours count against:</p>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Marketing campaign for</th><th>Hours count against</th></tr></thead>
+        <tbody>
+          <tr><td>Education</td><td>Education budget</td></tr>
+          <tr><td>Planning Center</td><td>Planning Center budget</td></tr>
+          <tr><td>Delight</td><td>Planning Center budget</td></tr>
+          <tr><td>Education + Planning Center</td><td>Split automatically, 70% Education / 30% Planning Center</td></tr>
+          <tr><td>Any other department (Corporate, Marketing…)</td><td>Neither budget. Still counts as campaign work in Marketing's capacity</td></tr>
         </tbody>
       </table></div>
       <h3>Create a campaign</h3>
       <ol>
         <li>Go to <a href="#/campaigns">Campaigns</a> → <strong>New campaign</strong>.</li>
-        <li>Fill in name, description, business unit, status, dates, owner and planned hours.</li>
+        <li>Fill in name, description, department, who it's for, status, dates, owner and planned hours. Department starts as yours.</li>
         <li>Click <strong>Create campaign</strong>. To change it later, open it and click <strong>Edit</strong>.</li>
       </ol>
       <p>Use the filters and the search box on the Campaigns page to find a campaign. Hours logged turn red when they pass the planned hours.</p>
@@ -140,10 +151,10 @@ const SECTIONS = [
         <li>Click <strong>Stop</strong>. The time is rounded to the nearest 5 minutes; check it and click <strong>Save time</strong>.</li>
         <li><strong>Cancel</strong> keeps it running; <strong>Discard timer</strong> throws it away. Only one timer runs at a time.</li>
       </ol>
-      <h3>Internal and Shared time</h3>
+      <h3>Internal time, and campaigns for both units</h3>
       <ul>
         <li><strong>Internal</strong> (no campaign) is for team meetings, admin and training. It counts towards capacity, not against either budget.</li>
-        <li>On a <strong>Shared</strong> campaign you log one entry; it is split 70% Education / 30% Planning Center behind the scenes.</li>
+        <li>On a Marketing campaign for <strong>Education + Planning Center</strong> you log one entry; it is split 70% Education / 30% Planning Center behind the scenes.</li>
       </ul>
       <h3>Correcting entries</h3>
       <p>Use <strong>Edit</strong> or <strong>Delete</strong> in <strong>Entries this week</strong> on My time. A grid box with a dashed outline holds several entries; typing a new total merges them.</p>
@@ -222,11 +233,11 @@ const SECTIONS = [
     id: 'admin',
     title: 'Admin procedures (Carlota)',
     html: `
-      <p>Keep people, capacity and budgets up to date in <a href="#/capacity/people">Capacity</a> (sections <strong>People</strong>, <strong>Team rules</strong>, <strong>Monthly budgets</strong> and <strong>Holidays &amp; time off</strong>). The <strong>Design system</strong> reference is in the menu under your photo.</p>
+      <p>Keep people, capacity and budgets up to date in <a href="#/capacity/people">Capacity</a> (sections <strong>People</strong>, <strong>Departments</strong>, <strong>Team rules</strong>, <strong>Monthly budgets</strong> and <strong>Holidays &amp; time off</strong>). The <strong>Design system</strong> reference is in the menu under your photo.</p>
       <h3>When someone joins</h3>
       <ol>
         <li>In Capacity → People, click <strong>Invite</strong> and enter their DSD email (or ask them to sign in once). They appear as a Team member.</li>
-        <li>Click <strong>Edit</strong> on their row and set everything in one place: role, hours per day, working days, holiday calendar and whether they count in capacity. New team members still on the starting settings show <strong>Needs setup</strong>.</li>
+        <li>Click <strong>Edit</strong> on their row and set everything in one place: department, role, hours per day, working days, holiday calendar and whether they count in capacity. New team members still on the starting settings show <strong>Needs setup</strong>.</li>
         <li>For a director: choose <strong>Director</strong> and untick <strong>Counts in team capacity</strong>.</li>
       </ol>
       <h3>When someone leaves</h3>
@@ -237,7 +248,8 @@ const SECTIONS = [
         <tbody>
           <tr><td>Team rules: productive time (80%)</td><td>Share of working hours available for campaign work</td></tr>
           <tr><td>Team rules: budget split (70 / 30)</td><td>How productive hours divide into each unit's monthly budget</td></tr>
-          <tr><td>Team rules: Shared split (70 / 30)</td><td>How hours on Shared campaigns are divided; changes apply only to hours logged afterwards</td></tr>
+          <tr><td>Departments</td><td>The list of departments and the business unit each belongs to. Each person's department is set in <strong>People</strong></td></tr>
+          <tr><td>Team rules: split for campaigns for both (70 / 30)</td><td>How hours on Marketing campaigns for both Education and Planning Center are divided; changes apply only to hours logged afterwards</td></tr>
           <tr><td>Monthly budgets</td><td>Automatic. Type a number to override a month; <strong>Back to automatic</strong> undoes it</td></tr>
           <tr><td>Holidays &amp; time off</td><td>The team calendar shows each person's bank holidays (Madrid or England) and time off; click a bank holiday to rename or delete it. Bank holidays are loaded to the end of 2027; add new ones in <strong>Bank holidays by year</strong> once the dates are published.</td></tr>
         </tbody>
@@ -261,7 +273,7 @@ const SECTIONS = [
     html: `
       <h3>The rules in short</h3>
       <ol>
-        <li>Every piece of work sits in a campaign with the right business unit; non-campaign work is Internal.</li>
+        <li>Every piece of work sits in a campaign with the right department and "for"; non-campaign work is Internal.</li>
         <li>Every task has one assignee and, where there's a deadline, a due date.</li>
         <li>Log all your working hours, daily if possible, complete by Friday afternoon.</li>
         <li>Add your time off as soon as it's agreed.</li>
@@ -282,7 +294,7 @@ const SECTIONS = [
       <h3>FAQ</h3>
       <p><strong>Can I see my teammates' hours?</strong> Yes, with the Person picker on My time. Only the Admin can change someone else's entries.</p>
       <p><strong>Do I need to log hours on a specific task?</strong> Yes. Campaign time always goes on a task or subtask, so every hour can be traced. If no task fits, add one on the campaign page first. Only Internal time has no task.</p>
-      <p><strong>What if I worked on something for both units?</strong> Use a Shared campaign: your one entry is split 70 / 30 automatically.</p>
+      <p><strong>What if I worked on something for both Education and Planning Center?</strong> Use a Marketing campaign for <strong>Education + Planning Center</strong>: your one entry is split 70 / 30 automatically.</p>
       <p><strong>Does the tool replace Personio?</strong> No. Get holidays approved in Personio as usual, then add them here.</p>`,
   },
 ];

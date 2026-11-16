@@ -4,7 +4,8 @@ import { onTasksChanged, onLiveChange } from '../realtime.js';
 import { createTask, updateTask, deleteTask, byPosition } from '../tasks.js';
 import { loadTasksHours } from '../time.js';
 import { startTimer } from '../timer.js';
-import { esc, options, buTag, fmtHours, toast, errorMessage, confirmDialog, TASK_STATUSES } from '../ui.js';
+import { esc, options, fmtHours, toast, errorMessage, confirmDialog, TASK_STATUSES } from '../ui.js';
+import { forTag } from '../departments.js';
 import { openTimeEntryForm } from './time-entry-form.js';
 import { mountAttachments, mountComments } from './task-discussion.js';
 
@@ -76,7 +77,7 @@ window.addEventListener('hashchange', closeTaskPanel);
 
 async function loadTask(taskId) {
   const { data: task, error } = await supabase
-    .from('tasks').select('*, campaign:campaigns(id, name, business_unit)').eq('id', taskId).maybeSingle();
+    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id)').eq('id', taskId).maybeSingle();
   if (error) throw error;
   if (!task) return null;
   const { data: subtasks, error: subError } = await supabase.from('tasks').select('*').eq('parent_id', taskId);
@@ -95,7 +96,7 @@ function render() {
   panel.innerHTML = `
     <header class="panel-header">
       <a class="panel-campaign" href="#/campaigns/${esc(task.campaign.id)}">
-        ${buTag(task.campaign.business_unit)} <span>${esc(task.campaign.name)}</span>
+        ${forTag(task.campaign)} <span>${esc(task.campaign.name)}</span>
       </a>
       <div class="panel-actions">
         <button class="btn btn-small btn-ghost" type="button" data-copy-link title="Copy a link to this task">Copy link</button>

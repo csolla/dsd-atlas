@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { state, loadMe, loadPeople, isDirector } from './state.js';
 import { esc, avatar, ROLES, errorMessage } from './ui.js';
+import { loadDepartments } from './departments.js';
 import { startRealtime, stopRealtime } from './realtime.js';
 import { loadTimer, mountTimerBar, clearTimer } from './timer.js';
 import { mountBell, clearBell } from './notifications.js';
@@ -28,7 +29,7 @@ const ROUTES = [
   { path: /^\/my-time$/, roles: WORK, nav: 'my-time', render: renderMyTime },
   { path: /^\/dashboards$/, roles: ALL, nav: 'dashboards', render: el => renderDashboards(el) },
   { path: /^\/dashboards\/present$/, roles: ALL, nav: 'dashboards', render: el => renderDashboards(el, { present: true }) },
-  { path: /^\/capacity\/(people|rules|budgets|calendar)$/, roles: ['admin'], nav: 'capacity', render: (el, section) => renderCapacityPage(el, section) },
+  { path: /^\/capacity\/(people|departments|rules|budgets|calendar)$/, roles: ['admin'], nav: 'capacity', render: (el, section) => renderCapacityPage(el, section) },
   { path: /^\/capacity$/, roles: ['admin'], redirect: '/capacity/people' },
   { path: /^\/design-system$/, roles: ['admin'], nav: null, render: renderDesignSystem },
   // Old addresses
@@ -85,6 +86,7 @@ async function handleAuth(session) {
   if (!userId) {
     state.me = null;
     state.people = [];
+    state.departments = [];
     stopRealtime();
     clearTimer();
     clearBell();
@@ -100,7 +102,7 @@ async function handleAuth(session) {
       renderLogin(app, { error: 'Your account is not active. Ask Carlota if you need access.' });
       return;
     }
-    await loadPeople();
+    await Promise.all([loadPeople(), loadDepartments()]);
   } catch (error) {
     app.innerHTML = `<div class="splash">Could not load the app: ${esc(errorMessage(error))}</div>`;
     return;

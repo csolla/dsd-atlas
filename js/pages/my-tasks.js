@@ -5,7 +5,8 @@ import { updateTask, effectiveDue, dueGroup, isOverdue, todayIso, friendlyDue, D
 import { weekMinutes, weekStart, addDays } from '../time.js';
 import { availability, loadHolidays, loadTimeOff } from '../capacity.js';
 import { startTimer } from '../timer.js';
-import { esc, fmtDate, fmtHours, toast, errorMessage, TASK_STATUSES, BUSINESS_UNITS } from '../ui.js';
+import { esc, fmtDate, fmtHours, toast, errorMessage, TASK_STATUSES } from '../ui.js';
+import { unitLine } from '../departments.js';
 import { openTaskPanel } from './task-panel.js';
 
 const SHOW_DONE_KEY = 'my-tasks-show-completed';
@@ -75,7 +76,7 @@ async function load(page) {
   const { data, error } = await supabase
     .from('tasks')
     .select(`id, title, status, due_date, parent_id, position, campaign_id, updated_at,
-      campaign:campaigns(id, name, business_unit),
+      campaign:campaigns(id, name, budget, department_id, for_department_id),
       parent:parent_id(id, title, due_date)`)
     .eq('assignee_id', state.me.id);
   if (error) {
@@ -112,7 +113,7 @@ function row(item) {
       </div>
       <div class="my-task-campaign">
         <span class="campaign-name">${esc(item.campaign?.name || '')}</span>
-        ${item.campaign ? `<span class="unit-line"><span class="unit-dot unit-dot-${esc(item.campaign.business_unit)}" aria-hidden="true"></span>${esc(BUSINESS_UNITS[item.campaign.business_unit])}</span>` : ''}
+        ${item.campaign ? unitLine(item.campaign) : ''}
       </div>
       <span class="my-task-status"><span class="status status-task-${item.status}">${esc(TASK_STATUSES[item.status])}</span></span>
       <span class="due ${late ? 'overdue' : ''}" ${item.due ? `title="Due ${esc(fmtDate(item.due))}"` : ''}>${esc(friendlyDue(item.due, item.status))}</span>

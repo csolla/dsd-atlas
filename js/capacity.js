@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { isoDate, todayIso } from './tasks.js';
 import { addDays } from './time.js';
+import { isMarketingPerson } from './departments.js';
 
 // Months are 'YYYY-MM'; dates are 'YYYY-MM-DD'
 
@@ -114,9 +115,10 @@ export function monthBudget(month, { people, holidays, timeOff, settings, overri
   };
 }
 
-// People whose hours make up team capacity
+// People whose hours make up Marketing's capacity and budgets (same rule as
+// unit_month_budget in SQL): active Marketing people who count in capacity
 export function capacityPeople(people) {
-  return people.filter(p => p.active && p.counts_in_capacity);
+  return people.filter(p => p.active && p.counts_in_capacity && isMarketingPerson(p));
 }
 
 export async function loadTeamSettings() {

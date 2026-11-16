@@ -1,11 +1,5 @@
 // Small shared helpers for building pages
 
-export const BUSINESS_UNITS = {
-  education: 'Education',
-  planning_center: 'Planning Center',
-  shared: 'Shared',
-};
-
 export const CAMPAIGN_STATUSES = {
   planned: 'Planned',
   in_progress: 'In progress',
@@ -36,10 +30,6 @@ export function options(map, selected) {
   return Object.entries(map)
     .map(([value, label]) => `<option value="${esc(value)}"${value === selected ? ' selected' : ''}>${esc(label)}</option>`)
     .join('');
-}
-
-export function buTag(bu) {
-  return `<span class="tag tag-${esc(bu)}">${esc(BUSINESS_UNITS[bu] || bu)}</span>`;
 }
 
 export function statusPill(status) {

@@ -1,5 +1,6 @@
 import { state } from '../state.js';
-import { esc, avatar, buTag, statusPill, toast, formDialog, confirmDialog } from '../ui.js';
+import { esc, avatar, statusPill, toast, formDialog, confirmDialog } from '../ui.js';
+import { departmentByKey, forTag } from '../departments.js';
 
 // Design system (Admin, from the menu under your photo): the reference for how the tool looks.
 // Everything shown is the real thing (same classes and tokens the app uses),
@@ -17,14 +18,22 @@ const TOKENS = [
     ['--accent', 'Buttons and links'], ['--accent-bright', 'Focus rings, selected states'], ['--accent-soft', 'Selected backgrounds'],
     ['--signal', 'Attention highlights'], ['--danger', 'Destructive actions, errors'], ['--success', 'Confirmations'],
   ] },
-  { group: 'Business units', items: [
-    ['--edu', 'Education'], ['--pc', 'Planning Center'], ['--shared', 'Shared'],
+  { group: 'Marketing budgets (who a campaign is for)', items: [
+    ['--edu', 'Education'], ['--pc', 'Planning Center'], ['--shared', 'Education + Planning Center'],
   ] },
   { group: 'Charts (validated for colour blindness)', items: [
     ['--series-edu', 'Education series'], ['--series-pc', 'Planning Center series'], ['--series-internal', 'Internal'],
     ['--status-good', 'Within budget'], ['--status-warning', 'Over 80%'], ['--status-critical', 'Budget reached'],
   ] },
 ];
+
+// A sample "For" tag: Marketing campaigns for Education, Planning Center or
+// both, and a Delight campaign for its own department
+function example(budget) {
+  const key = { education: 'education', planning_center: 'planning_center', other: 'delight' }[budget];
+  const dept = departmentByKey(key)?.id;
+  return forTag({ budget, department_id: dept, for_department_id: budget === 'shared' ? null : dept });
+}
 
 function section(id, title, description, uses, preview) {
   return `
@@ -98,10 +107,10 @@ export function renderDesignSystem(el) {
       </div>`)}
 
     ${section('tags', 'Tags, statuses and chips', 'Small labels that carry a category or state. Colour always comes with a word or an icon, never alone.', [
-      '<strong>Business unit tags</strong> wherever a campaign or entry is listed.',
+      '<strong>"For" tags</strong> wherever a campaign or entry is listed: Education, Planning Center and both in their budget colours; any other department in neutral.',
       '<strong>Status pills</strong> for campaign status; <strong>status chips</strong> (icon + label) for budget health.',
     ], `
-      <div class="ds-row">${buTag('education')} ${buTag('planning_center')} ${buTag('shared')} <span class="tag tag-internal">Internal</span></div>
+      <div class="ds-row">${example('education')} ${example('planning_center')} ${example('shared')} ${example('other')} <span class="tag tag-internal">Internal</span></div>
       <div class="ds-row">${statusPill('planned')} ${statusPill('in_progress')} ${statusPill('done')} ${statusPill('on_hold')}</div>
       <div class="ds-row">
         <span class="status-chip status-good"><span aria-hidden="true">✓</span> Within budget</span>
@@ -124,10 +133,10 @@ export function renderDesignSystem(el) {
     ], `
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Campaign</th><th>Business unit</th><th class="num">Hours</th></tr></thead>
+          <thead><tr><th>Campaign</th><th>For</th><th class="num">Hours</th></tr></thead>
           <tbody>
-            <tr><td><span class="row-link">Example campaign</span></td><td>${buTag('education')}</td><td class="num">12.5 h</td></tr>
-            <tr><td><span class="row-link">Another campaign</span></td><td>${buTag('shared')}</td><td class="num">4 h</td></tr>
+            <tr><td><span class="row-link">Example campaign</span></td><td>${example('education')}</td><td class="num">12.5 h</td></tr>
+            <tr><td><span class="row-link">Another campaign</span></td><td>${example('shared')}</td><td class="num">4 h</td></tr>
           </tbody>
         </table>
       </div>

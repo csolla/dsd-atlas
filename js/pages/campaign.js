@@ -8,8 +8,9 @@ import {
 } from '../tasks.js';
 import {
   esc, options, statusPill, avatar, fmtCompactRange, fmtDate, fmtHours, toast, errorMessage,
-  confirmDialog, TASK_STATUSES, BUSINESS_UNITS,
+  confirmDialog, TASK_STATUSES,
 } from '../ui.js';
+import { unitLine } from '../departments.js';
 import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
 
@@ -56,7 +57,7 @@ export async function renderCampaign(el, id, openTask = null) {
         <div class="summary-title">
           <h1>${esc(campaign.name)}</h1>
           <div class="summary-meta">
-            <span class="unit-line"><span class="unit-dot unit-dot-${esc(campaign.business_unit)}" aria-hidden="true"></span>${esc(BUSINESS_UNITS[campaign.business_unit])}</span>
+            ${unitLine(campaign)}
             ${statusPill(campaign.status)}
             <span>${esc(fmtCompactRange(campaign.start_date, campaign.end_date))}</span>
             ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}
@@ -151,7 +152,7 @@ function meter(pct, level) {
   return `<span class="mini-meter meter-${level}" aria-hidden="true"><span style="width:${Math.min(100, pct)}%"></span></span>`;
 }
 
-// Hours logged, with the Education / Planning Center split for Shared campaigns.
+// Hours logged, with the Education / Planning Center split for campaigns for both.
 // Campaigns with hours can't be deleted.
 async function loadHours(page) {
   const { el, campaign } = page;
@@ -165,7 +166,7 @@ async function loadHours(page) {
   const planned = Number(campaign.planned_hours);
   const pct = planned > 0 ? hours / planned * 100 : null;
   const level = pct == null ? 'none' : pct > 100 ? 'critical' : pct >= 80 ? 'warning' : 'good';
-  const split = campaign.business_unit === 'shared' && hours
+  const split = campaign.budget === 'shared' && hours
     ? `<span class="muted small hours-split">${fmtHours(totals.education_hours)} Education · ${fmtHours(totals.planning_center_hours)} Planning Center</span>`
     : '';
   el.querySelector('[data-hours]').innerHTML = `

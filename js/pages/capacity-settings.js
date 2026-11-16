@@ -35,10 +35,10 @@ export function renderCapacitySettings(el, section = 'rules') {
             <span class="muted small">How productive hours divide into each unit's monthly budget.</span>
           </label>
           <label class="rule">
-            <span class="rule-label">Shared campaigns split</span>
+            <span class="rule-label">Split for campaigns for both</span>
             <span class="rule-input"><input type="number" name="shared_split_education" min="0" max="100" step="1" required> % Education ·
               <strong data-shared-pc>…</strong> Planning Center</span>
-            <span class="muted small">How hours on Shared campaigns are divided. Applies to hours logged from now on.</span>
+            <span class="muted small">How hours on Marketing campaigns for both Education and Planning Center are divided. Applies to hours logged from now on.</span>
           </label>
         </div>
         <p class="rules-example" data-standard-month></p>
@@ -138,7 +138,7 @@ async function setUpRules(el) {
       effects.push('every automatic monthly budget, past and future, is recalculated');
     }
     if (changed.includes('shared_split_education')) {
-      effects.push(`hours logged on Shared campaigns from now on split ${values.shared_split_education} / ${100 - values.shared_split_education} (past entries keep their split)`);
+      effects.push(`hours logged on campaigns for both units from now on split ${values.shared_split_education} / ${100 - values.shared_split_education} (past entries keep their split)`);
     }
     const ok = await confirmDialog({
       title: 'Save the team rules?',

@@ -1,9 +1,10 @@
 import { supabase } from './supabase.js';
 
-// Shared app state: the signed-in person and the people list
+// Shared app state: the signed-in person, the people list and the departments
 export const state = {
   me: null,
   people: [],
+  departments: [],
 };
 
 export const isAdmin = () => state.me?.role === 'admin';

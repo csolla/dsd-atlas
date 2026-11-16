@@ -3,13 +3,17 @@ import { state, canEditWork, personById } from '../state.js';
 import { onTasksChanged, onLiveChange } from '../realtime.js';
 import { tasksDonePct, todayIso } from '../tasks.js';
 import { loadCampaignHours } from '../time.js';
+import { loadTeamSettings } from '../capacity.js';
 import {
   esc, options, statusPill, avatar, fmtHours, fmtCompactRange, toast, errorMessage, formDialog,
-  BUSINESS_UNITS, CAMPAIGN_STATUSES,
+  CAMPAIGN_STATUSES,
 } from '../ui.js';
+import {
+  BUSINESS_UNITS, FOR_BOTH, departmentById, departmentByKey, isMarketing, unitLine,
+} from '../departments.js';
 
 // Kept between visits so the list looks the same when coming back to it
-const filters = { search: '', bu: '', owner: '', view: 'active', mine: false, sort: 'start', dir: 'desc' };
+const filters = { search: '', dept: '', bu: '', owner: '', view: 'active', mine: false, sort: 'start', dir: 'desc' };
 
 const VIEWS = {
   active: { label: 'Active', statuses: ['planned', 'in_progress'] },
@@ -39,6 +43,9 @@ export async function renderCampaigns(el) {
     </div>
     <div class="filters">
       <input class="search" type="search" placeholder="Search campaigns" aria-label="Search campaigns" value="${esc(filters.search)}">
+      <select data-filter="dept" aria-label="Department">
+        <option value="">All departments</option>${options(Object.fromEntries(state.departments.map(d => [d.id, d.name])), filters.dept)}
+      </select>
       <select data-filter="bu" aria-label="Business unit">
         <option value="">All business units</option>${options(BUSINESS_UNITS, filters.bu)}
       </select>
@@ -86,7 +93,7 @@ export async function renderCampaigns(el) {
     select.addEventListener('change', () => { filters[select.dataset.filter] = select.value; draw(); }));
   el.querySelector('[data-mine]').addEventListener('change', event => { filters.mine = event.target.checked; draw(); });
   el.querySelector('[data-clear]').addEventListener('click', () => {
-    Object.assign(filters, { search: '', bu: '', owner: '', mine: false });
+    Object.assign(filters, { search: '', dept: '', bu: '', owner: '', mine: false });
     el.querySelector('.search').value = '';
     el.querySelector('[data-mine]').checked = false;
     el.querySelectorAll('[data-filter]').forEach(select => { select.value = ''; });
@@ -98,7 +105,8 @@ export async function renderCampaigns(el) {
 // Everything except the Active / Done / All tab
 function matchesFilters(campaign) {
   const q = filters.search.trim().toLowerCase();
-  return (!filters.bu || campaign.business_unit === filters.bu)
+  return (!filters.dept || campaign.department_id === filters.dept)
+    && (!filters.bu || departmentById(campaign.department_id)?.business_unit === filters.bu)
     && (!filters.owner || campaign.owner_id === filters.owner)
     && (!filters.mine || campaign.owner_id === state.me.id)
     && (!q || `${campaign.name} ${campaign.description || ''}`.toLowerCase().includes(q));
@@ -192,7 +200,7 @@ function drawList(list, data, draw) {
               <tr class="clickable" data-href="#/campaigns/${esc(c.id)}">
                 <td data-label="Campaign">
                   <a class="row-link campaign-link" href="#/campaigns/${esc(c.id)}">${esc(c.name)}</a>
-                  <span class="unit-line"><span class="unit-dot unit-dot-${esc(c.business_unit)}" aria-hidden="true"></span>${esc(BUSINESS_UNITS[c.business_unit])}</span>
+                  ${unitLine(c)}
                   ${endedFlag(c)}
                 </td>
                 <td data-label="Owner">${owner ? `<span class="person">${avatar(owner, 24)}${esc(owner.name)}</span>` : '<span class="muted">—</span>'}</td>
@@ -226,13 +234,64 @@ function drawList(list, data, draw) {
   }));
 }
 
+// Who a campaign can be for, as groups of { value: label }. Marketing
+// campaigns: Education, Planning Center, Delight (Planning Center budget)
+// or both (hours split by the Team rules) count against a budget; any other
+// department counts against neither. Any other department's campaign: its own department first.
+function forGroups(departmentId, sharedSplit) {
+  const own = departmentById(departmentId);
+  if (isMarketing(departmentId)) {
+    const edu = departmentByKey('education');
+    const pc = departmentByKey('planning_center');
+    const delight = departmentByKey('delight');
+    return [
+      ['Counts against a Marketing budget', {
+        [edu?.id]: 'Education',
+        [pc?.id]: 'Planning Center',
+        [delight?.id]: 'Delight (Planning Center budget)',
+        [FOR_BOTH]: `Education + Planning Center (hours split ${sharedSplit} / ${100 - sharedSplit})`,
+      }],
+      ['Other departments (no budget)', Object.fromEntries(state.departments
+        .filter(d => ![edu?.id, pc?.id, delight?.id].includes(d.id))
+        .map(d => [d.id, d.id === departmentId ? `${d.name} (own department)` : d.name]))],
+    ];
+  }
+  const others = state.departments.filter(d => d.id !== departmentId);
+  return [[null, Object.fromEntries([...(own ? [[own.id, `${own.name} (own department)`]] : []), ...others.map(d => [d.id, d.name])])]];
+}
+
+const forChoices = (departmentId, sharedSplit) =>
+  Object.assign({}, ...forGroups(departmentId, sharedSplit).map(([, choices]) => choices));
+
+function forOptions(departmentId, sharedSplit, selected) {
+  return forGroups(departmentId, sharedSplit).map(([label, choices]) => (label
+    ? `<optgroup label="${esc(label)}">${options(choices, selected)}</optgroup>`
+    : options(choices, selected))).join('');
+}
+
+// The "For" value a campaign has now
+function currentFor(c) {
+  if (c.budget === 'shared') return FOR_BOTH;
+  return c.for_department_id || c.department_id;
+}
+
 // New campaign (campaign = null) or edit an existing one.
 // onSaved receives the saved campaign row.
-export function openCampaignForm(campaign, onSaved) {
-  const c = campaign || { business_unit: 'education', status: 'planned', owner_id: state.me.id, planned_hours: 0 };
+export async function openCampaignForm(campaign, onSaved) {
+  const marketing = departmentByKey('marketing');
+  const defaultDept = state.me.department_id || marketing?.id;
+  const c = campaign || {
+    department_id: defaultDept,
+    // Marketing work starts as Education, like before; everyone else's is for their own department
+    for_department_id: isMarketing(defaultDept) ? departmentByKey('education')?.id : defaultDept,
+    status: 'planned', owner_id: state.me.id, planned_hours: 0,
+  };
+  const settings = await loadTeamSettings().catch(() => ({}));
+  const sharedSplit = Number(settings.shared_split_education ?? 70);
+  const departments = Object.fromEntries(state.departments.map(d => [d.id, d.name]));
   const owners = state.people.filter(p => (p.active && p.role !== 'director') || p.id === c.owner_id);
 
-  formDialog({
+  const dialog = formDialog({
     title: campaign ? 'Edit campaign' : 'New campaign',
     submitLabel: campaign ? 'Save changes' : 'Create campaign',
     body: `
@@ -241,11 +300,14 @@ export function openCampaignForm(campaign, onSaved) {
       <label class="field"><span>Description</span>
         <textarea name="description" rows="3">${esc(c.description || '')}</textarea></label>
       <div class="field-row">
-        <label class="field"><span>Business unit</span>
-          <select name="business_unit">${options(BUSINESS_UNITS, c.business_unit)}</select></label>
-        <label class="field"><span>Status</span>
-          <select name="status">${options(CAMPAIGN_STATUSES, c.status)}</select></label>
+        <label class="field"><span>Department</span>
+          <select name="department_id" required>${options(departments, c.department_id)}</select></label>
+        <label class="field"><span>For</span>
+          <select name="for_department_id" required>${forOptions(c.department_id, sharedSplit, currentFor(c))}</select></label>
       </div>
+      <p class="muted small form-note" data-for-help></p>
+      <label class="field"><span>Status</span>
+        <select name="status">${options(CAMPAIGN_STATUSES, c.status)}</select></label>
       <div class="field-row">
         <label class="field"><span>Start date</span>
           <input type="date" name="start_date" required value="${esc(c.start_date || '')}"></label>
@@ -266,7 +328,8 @@ export function openCampaignForm(campaign, onSaved) {
       const values = {
         name: f.name.trim(),
         description: f.description.trim() || null,
-        business_unit: f.business_unit,
+        department_id: f.department_id,
+        for_department_id: f.for_department_id === FOR_BOTH ? null : f.for_department_id,
         status: f.status,
         start_date: f.start_date || null,
         end_date: f.end_date || null,
@@ -275,6 +338,7 @@ export function openCampaignForm(campaign, onSaved) {
       };
 
       if (!values.name) return 'Give the campaign a name.';
+      if (!values.department_id) return 'Choose the department this campaign belongs to.';
       if (!values.start_date || !values.end_date) return 'Add a start and an end date.';
       if (values.end_date < values.start_date) return 'The end date must be on or after the start date.';
       if (!Number.isFinite(values.planned_hours) || values.planned_hours < 0) return 'Planned hours must be 0 or more.';
@@ -289,4 +353,23 @@ export function openCampaignForm(campaign, onSaved) {
       onSaved?.(data);
     },
   });
+
+  // "For" follows the department: its choices change, and the note says
+  // what the choice means for hours
+  const deptSelect = dialog.querySelector('[name=department_id]');
+  const forSelect = dialog.querySelector('[name=for_department_id]');
+  const help = dialog.querySelector('[data-for-help]');
+  const explain = () => {
+    help.textContent = isMarketing(deptSelect.value)
+      ? 'Marketing hours for Education count against its budget; for Planning Center or Delight, against the Planning Center budget; for both, they are split. Hours for any other department count against neither.'
+      : 'Who the work is for. Leave it as the own department unless the work is for another team.';
+  };
+  deptSelect.addEventListener('change', () => {
+    const choices = forChoices(deptSelect.value, sharedSplit);
+    const keep = forSelect.value in choices ? forSelect.value
+      : isMarketing(deptSelect.value) ? departmentByKey('education')?.id : deptSelect.value;
+    forSelect.innerHTML = forOptions(deptSelect.value, sharedSplit, keep);
+    explain();
+  });
+  explain();
 }

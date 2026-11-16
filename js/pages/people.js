@@ -2,9 +2,10 @@ import { supabase, inviteClient } from '../supabase.js';
 import { state, loadPeople } from '../state.js';
 import { ALLOWED_EMAIL_DOMAIN } from '../config.js';
 import { esc, options, avatar, toast, errorMessage, confirmDialog, formDialog, ROLES } from '../ui.js';
+import { departmentById, isMarketingPerson, BUSINESS_UNITS } from '../departments.js';
 
 // Capacity > People (Admin): everything about each person in one place:
-// role, capacity (hours per day, working days, calendar, counts in capacity)
+// department, role, capacity (hours per day, working days, calendar, counts in capacity)
 // and active/deactivated. Team-wide rules live in the other Capacity sections.
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -33,7 +34,14 @@ function daysText(days) {
   return consecutive && list.length > 2 ? `${DAYS[list[0] - 1]}–${DAYS[list[list.length - 1] - 1]}` : list.map(d => DAYS[d - 1]).join(', ');
 }
 
+function departmentCell(p) {
+  const dept = departmentById(p.department_id);
+  if (!dept) return p.active ? '<span class="setup-flag">No department</span>' : '<span class="muted">—</span>';
+  return `${esc(dept.name)}<br><span class="muted small">${esc(BUSINESS_UNITS[dept.business_unit])}</span>`;
+}
+
 function capacityText(p) {
+  if (!isMarketingPerson(p)) return '<span class="muted">Not in Marketing capacity</span>';
   if (!p.counts_in_capacity) return '<span class="muted">Not counted in capacity</span>';
   return `${Number(p.hours_per_day)} h/day · ${esc(daysText(p.working_days))} · ${esc(p.holiday_calendar)}`;
 }
@@ -67,7 +75,7 @@ function draw(el) {
   list.innerHTML = `
     <div class="table-wrap">
       <table class="table people-table">
-        <thead><tr><th>Person</th><th>Role</th><th>Capacity</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Person</th><th>Department</th><th>Role</th><th>Capacity</th><th>Status</th><th></th></tr></thead>
         <tbody>
           ${people.map(p => {
             const self = p.id === state.me.id;
@@ -80,6 +88,7 @@ function draw(el) {
                     <span class="muted small">${esc(p.email)}</span></span>
                   </span>
                 </td>
+                <td>${departmentCell(p)}</td>
                 <td>${esc(ROLES[p.role])}</td>
                 <td>
                   ${capacityText(p)}
@@ -111,6 +120,12 @@ function editPerson(el, person) {
     title: `Edit ${person.name}`,
     submitLabel: 'Save',
     body: `
+      <label class="field"><span>Department</span>
+        <select name="department_id">
+          <option value="">No department yet</option>
+          ${options(Object.fromEntries(state.departments.map(d => [d.id, d.name])), person.department_id)}
+        </select></label>
+      <p class="muted small form-note">Only people in Marketing count in Marketing's capacity and budgets for now.</p>
       <label class="field"><span>Role</span>
         <select name="role" ${self ? 'disabled' : ''}>${options(ROLES, person.role)}</select></label>
       <p class="muted small form-note" data-role-help>${esc(ROLE_HELP[person.role])}</p>
@@ -127,6 +142,7 @@ function editPerson(el, person) {
         Counts in team capacity (and budgets)</label>`,
     onSubmit: async form => {
       const values = {
+        department_id: form.elements.department_id.value || null,
         hours_per_day: Number(form.elements.hours_per_day.value),
         holiday_calendar: form.elements.holiday_calendar.value,
         working_days: [...form.querySelectorAll('[name=day]:checked')].map(c => Number(c.value)),
@@ -197,7 +213,7 @@ function invite(el) {
     body: `
       <label class="field"><span>Their DSD email</span>
         <input type="email" name="email" required placeholder="name@${esc(ALLOWED_EMAIL_DOMAIN)}"></label>
-      <p class="muted small">They'll get an email with a sign-in link and start as a Team member. Change their role and capacity here afterwards.</p>`,
+      <p class="muted small">They'll get an email with a sign-in link and start as a Team member with no department. Set their department, role and capacity here afterwards.</p>`,
     onSubmit: async form => {
       const email = form.elements.email.value.trim().toLowerCase();
       if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) return `Only @${ALLOWED_EMAIL_DOMAIN} addresses can be invited.`;
