@@ -134,7 +134,7 @@ export function renderDesignSystem(el) {
       'In the Fields dialog, each field is a row (<code>.field-list</code>) with its type, ↑ ↓, Edit and Delete; ready-made sets are cards (<code>.field-set</code>) with an Add button.',
       'In the task panel, fields sit in a two-column grid (<code>.custom-fields-grid</code>); text and several-choice fields take the full width. Money pairs a currency box with the amount (<code>.money-input</code>).',
       'In the List, editors fill fields right in their cells (<code>.field-cell</code>): compact inputs, and several-choice fields open a small tick-box list (<code>.multi-cell</code>). Directors see plain values; numbers and money right-aligned, empty values as a dash.',
-      'On cards, filled-in fields are outlined tags (<code>.card-field</code>) under the title, showing only the value; the field name is in the tag's hover text. At most four, then “+N more”.',
+      'On cards, filled-in fields are outlined tags (<code>.card-field</code>) under the title, showing only the value; the field name shows when you hover the tag. At most four, then “+N more”.',
     ], `
       <ul class="field-list">
         <li><span class="field-list-name"><strong>Total amount</strong><span class="muted small">Money · €, US$, GBP</span></span>
