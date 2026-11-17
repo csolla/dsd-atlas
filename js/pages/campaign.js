@@ -15,6 +15,8 @@ import { unitLine } from '../departments.js';
 import { loadAccess, projectAudience, accessNames } from '../access.js';
 import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
+import { loadFields, loadProjectValues, formatValue } from '../fields.js';
+import { openFieldsDialog } from '../fields-dialog.js';
 
 const DONE_SHOWN = 10;
 
@@ -26,12 +28,15 @@ const memory = {};
 export async function renderCampaign(el, id, openTask = null) {
   el.innerHTML = '<p class="muted">Loading project…</p>';
 
-  const [campaignResult, tasksResult, sectionsResult] = await Promise.allSettled([
+  const [campaignResult, tasksResult, sectionsResult, fieldsResult, valuesResult] = await Promise.allSettled([
     supabase.from('campaigns').select('*').eq('id', id).maybeSingle(),
     loadCampaignTasks(id),
     loadSections(id),
+    loadFields(id),
+    loadProjectValues(id),
   ]);
-  const error = campaignResult.reason || campaignResult.value?.error || tasksResult.reason || sectionsResult.reason;
+  const error = campaignResult.reason || campaignResult.value?.error || tasksResult.reason || sectionsResult.reason
+    || fieldsResult.reason || valuesResult.reason;
   if (error) {
     el.innerHTML = `<p class="form-error">${esc(errorMessage(error))}</p>`;
     return;
@@ -46,7 +51,8 @@ export async function renderCampaign(el, id, openTask = null) {
 
   memory[id] ||= { q: '', person: '', section: '', assignee: '', due: '', showAllDone: false, details: false };
   const page = {
-    el, campaign, tasks: tasksResult.value, sections: sectionsResult.value, view: memory[id].view || 'kanban', dragging: false, counts: {}, m: memory[id],
+    el, campaign, tasks: tasksResult.value, sections: sectionsResult.value,
+    fields: fieldsResult.value, values: valuesResult.value, view: memory[id].view || 'kanban', dragging: false, counts: {}, m: memory[id],
   };
   const owner = personById(campaign.owner_id);
   // On a private project, only people who can see it can be assigned
@@ -111,6 +117,7 @@ export async function renderCampaign(el, id, openTask = null) {
         </select>
         <select data-section-filter aria-label="Show section" hidden></select>
         <span class="spacer"></span>
+        ${canEditWork() ? '<button class="btn btn-ghost btn-small" type="button" data-fields title="This project\'s own fields, such as an amount or a date">Fields</button>' : ''}
         <div class="view-switch" role="group" aria-label="View">
           <button type="button" data-view="kanban" title="Columns by status: To do, In progress, In review, Done">Kanban</button>
           <button type="button" data-view="board" title="Columns by section">Board</button>
@@ -158,6 +165,23 @@ export async function renderCampaign(el, id, openTask = null) {
       drawTasks(page);
     } catch { /* keep what's shown */ }
   }, { isBusy: () => page.dragging || page.el.contains(document.activeElement) && document.activeElement.matches('.column-add input') });
+
+  el.querySelector('[data-fields]')?.addEventListener('click', () => openFieldsDialog(campaign, {
+    countValues: fieldId => Object.values(page.values).filter(v => v[fieldId] !== undefined).length,
+    onChanged: fields => { page.fields = fields; drawTasks(page); },
+  }));
+  onLiveChange(el, 'fields-changed', async () => {
+    try {
+      page.fields = await loadFields(id);
+      drawTasks(page);
+    } catch { /* keep what's shown */ }
+  }, { isBusy: () => page.dragging });
+  onLiveChange(el, 'field-values-changed', async () => {
+    try {
+      page.values = await loadProjectValues(id);
+      drawTasks(page);
+    } catch { /* keep what's shown */ }
+  }, { isBusy: () => page.dragging });
 
   onLiveChange(el, 'sections-changed', async () => {
     try {
@@ -488,11 +512,15 @@ function drawList(page, container, main, subtasksOf) {
         <td>${assignee ? `<span class="person">${avatar(assignee, 24)}${esc(assignee.name)}</span>` : `<span class="person">${assigneeBadge(task)}<span class="muted">Unassigned</span></span>`}</td>
         <td class="nowrap">${dueLabel(task) || '<span class="muted">—</span>'}</td>
         <td><select data-status aria-label="Status">${options(TASK_STATUSES, task.status)}</select></td>
+        ${page.fields.map(f => {
+          const text = formatValue(f, page.values[task.id]?.[f.id]);
+          return `<td class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}" title="${esc(text)}">${text ? esc(text) : '<span class="muted">—</span>'}</td>`;
+        }).join('')}
       </tr>`;
   };
   const head = (g, i) => (sections.length ? `
     <tr class="task-section-row" data-section-head>
-      <th colspan="5" scope="colgroup">
+      <th colspan="${columns}" scope="colgroup">
         <div class="task-section-head">
           <h3>${esc(g.name)}</h3><span class="muted">${g.tasks.length}</span>
           <span class="spacer"></span>
@@ -505,20 +533,21 @@ function drawList(page, container, main, subtasksOf) {
       </th>
     </tr>` : '');
   const firstSection = groups.findIndex(g => g.id);
+  const columns = 5 + page.fields.length;
 
   container.innerHTML = `
     <div class="table-wrap">
       <table class="table task-table">
         <thead>
-          <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th>Task</th><th>Assignee</th><th>Due</th><th>Status</th></tr>
+          <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th>Task</th><th>Assignee</th><th>Due</th><th>Status</th>${page.fields.map(f => `<th class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}">${esc(f.name)}</th>`).join('')}</tr>
         </thead>
         ${groups.map((g, i) => `
           <tbody data-group="${esc(g.id)}">
             ${head(g, i)}
             ${g.tasks.map(row).join('')}
-            ${!g.tasks.length ? `<tr class="task-section-empty" data-placeholder><td colspan="5" class="muted small">${sections.length ? 'No tasks in this section yet.' : 'No tasks yet.'}${edit && sections.length ? ' Drag one here or add one below.' : ''}</td></tr>` : ''}
+            ${!g.tasks.length ? `<tr class="task-section-empty" data-placeholder><td colspan="${columns}" class="muted small">${sections.length ? 'No tasks in this section yet.' : 'No tasks yet.'}${edit && sections.length ? ' Drag one here or add one below.' : ''}</td></tr>` : ''}
             ${edit && sections.length && !page.campaign.archived_at ? `
-              <tr class="task-section-add" data-placeholder><td colspan="5">
+              <tr class="task-section-add" data-placeholder><td colspan="${columns}">
                 <form class="column-add" data-section-add="${esc(g.id)}">
                   <button class="btn btn-ghost btn-small column-add-open" type="button">+ Add task</button>
                   <input placeholder="Task title, then Enter" aria-label="New task in ${esc(g.name)}" maxlength="300" hidden>

@@ -130,6 +130,27 @@ export function renderDesignSystem(el) {
           <span class="search-hit-meta"><strong>DSD Clinics Onboarding</strong> · To do · Ana</span></a></li>
       </ul>`)}
 
+    ${section('custom-fields', 'Custom fields', 'A project\'s own fields: managed in the Fields dialog, filled in the task panel, shown as List columns.', [
+      'In the Fields dialog, each field is a row (<code>.field-list</code>) with its type, ↑ ↓, Edit and Delete; ready-made sets are cards (<code>.field-set</code>) with an Add button.',
+      'In the task panel, fields sit in a two-column grid (<code>.custom-fields-grid</code>); text and several-choice fields take the full width. Money pairs a currency box with the amount (<code>.money-input</code>).',
+      'In the List, numbers and money are right-aligned; empty values show a dash.',
+    ], `
+      <ul class="field-list">
+        <li><span class="field-list-name"><strong>Total amount</strong><span class="muted small">Money · €, US$, GBP</span></span>
+          <button class="icon-btn" type="button" disabled aria-label="Move up">↑</button><button class="icon-btn" type="button" aria-label="Move down">↓</button>
+          <button class="btn btn-ghost btn-small" type="button">Edit</button><button class="btn btn-ghost btn-small" type="button">Delete</button></li>
+        <li><span class="field-list-name"><strong>Finance payment</strong><span class="muted small">Choice (pick one) · 3 choices</span></span>
+          <button class="icon-btn" type="button" aria-label="Move up">↑</button><button class="icon-btn" type="button" disabled aria-label="Move down">↓</button>
+          <button class="btn btn-ghost btn-small" type="button">Edit</button><button class="btn btn-ghost btn-small" type="button">Delete</button></li>
+      </ul>
+      <div class="field-set"><div><strong>Invoices</strong><span class="muted small">Amount, invoice date and number, payment and accounting codes.</span></div><button class="btn btn-small" type="button">Add</button></div>
+      <div class="custom-fields-grid ds-gap">
+        <div class="field"><span>Total amount</span><div class="money-input"><select aria-label="Currency"><option>€</option><option>US$</option></select><input type="number" value="8610.01" aria-label="Total amount"></div></div>
+        <div class="field"><span>Finance payment</span><select aria-label="Finance payment"><option>Pending</option><option selected>Done</option></select></div>
+        <div class="field field-wide"><span>P&amp;L account</span><div class="multi-choice" role="group" aria-label="P&amp;L account">
+          <label class="multi-choice-item"><input type="checkbox" checked> 201.4 - COGS Lab</label><label class="multi-choice-item"><input type="checkbox"> Labour</label></div></div>
+      </div>`)}
+
     ${section('task-sections', 'Task sections', 'Group a project\'s tasks into phases in the List view.', [
       'A header row per section (<code>.task-section-row</code>) with its name, task count and, for editors, ↑ ↓, Rename and Delete.',
       'Each section ends with its own <strong>+ Add task</strong>; an empty section says so.',

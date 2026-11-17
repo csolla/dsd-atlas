@@ -2,6 +2,7 @@ import { supabase } from '../supabase.js';
 import { state } from '../state.js';
 import { onTasksChanged, onLiveChange } from '../realtime.js';
 import { createTask, updateTask, deleteTask, byPosition, loadSections } from '../tasks.js';
+import { loadFields, loadTaskValues, saveValue, fieldInput, readFieldInput } from '../fields.js';
 import { loadTasksHours } from '../time.js';
 import { startTimer } from '../timer.js';
 import { esc, options, fmtHours, toast, errorMessage, confirmDialog, TASK_STATUSES } from '../ui.js';
@@ -57,6 +58,7 @@ export async function openTaskPanel(taskId, { highlight = null } = {}) {
   render();
   onTasksChanged(panel, refresh, { delay: 300 });
   onLiveChange(panel, 'sections-changed', refresh, { delay: 300 });
+  onLiveChange(panel, ['fields-changed', 'field-values-changed'], refresh, { delay: 300 });
   onLiveChange(panel, 'time-changed', loadHours, { delay: 300 });
   loadHours();
 }
@@ -90,7 +92,12 @@ async function loadTask(taskId) {
   const access = task.campaign.private ? await loadAccess(task.campaign_id) : [];
   // Only main tasks have a section; subtasks go with their parent
   const sections = task.parent_id ? [] : await loadSections(task.campaign_id).catch(() => []);
-  return { task, subtasks: subtasks.sort(byPosition), access, sections };
+  // The project's own fields and this task's values in them
+  const [fields, values] = task.parent_id ? [[], {}] : await Promise.all([
+    loadFields(task.campaign_id).catch(() => []),
+    loadTaskValues(task.id).catch(() => ({})),
+  ]);
+  return { task, subtasks: subtasks.sort(byPosition), access, sections, fields, values };
 }
 
 // People who can be assigned work (on a private project, only those who
@@ -126,6 +133,7 @@ function render() {
         <label class="field" data-section-field hidden><span>Section</span>
           <select data-field="section_id"></select></label>
       </div>
+      <section class="custom-fields" data-custom-fields hidden></section>
       <label class="field"><span>Description</span>
         <textarea data-field="description" rows="5" placeholder="Add more detail"></textarea></label>
       <section class="time-box">
@@ -149,6 +157,7 @@ function render() {
     </div>`;
 
   fillFields();
+  renderCustomFields();
   renderSubtasks();
   if (current.highlight) {
     const row = panel.querySelector(`[data-subtasks] li[data-id="${CSS.escape(current.highlight)}"]`);
@@ -163,6 +172,7 @@ function render() {
   panel.querySelector('[data-copy-link]').addEventListener('click', () => copyTaskLink(task));
   panel.querySelectorAll('[data-field]').forEach(input => input.addEventListener('change', () => saveField(input)));
   panel.querySelector('[data-add-subtask]').addEventListener('submit', addSubtask);
+  panel.querySelector('[data-custom-fields]').addEventListener('change', event => saveCustomField(event.target));
   panel.querySelector('[data-start-timer]').addEventListener('click', () =>
     startTimer({ campaign_id: task.campaign_id, task_id: task.id }));
   panel.querySelector('[data-add-time]').addEventListener('click', () =>
@@ -193,6 +203,48 @@ function fillFields() {
     }
     input.value = task[input.dataset.field] ?? '';
   });
+}
+
+// The project's own fields (Fields button on the project page)
+function renderCustomFields() {
+  const { panel, fields, values } = current;
+  const box = panel.querySelector('[data-custom-fields]');
+  box.hidden = !fields.length;
+  box.innerHTML = fields.length ? `
+    <h3>Fields</h3>
+    <div class="custom-fields-grid">${fields.map(f => `
+      <div class="field ${['text', 'multi'].includes(f.type) ? 'field-wide' : ''}">
+        <span>${esc(f.name)}</span>
+        ${fieldInput(f, values[f.id])}
+      </div>`).join('')}
+    </div>` : '';
+}
+
+async function saveCustomField(target) {
+  const el = target.closest('[data-field-id]') || target.closest('.money-input')?.querySelector('[data-field-id]');
+  if (!el) return;
+  const mine = current;
+  const field = mine.fields.find(f => f.id === el.dataset.fieldId);
+  if (!field) return;
+  const value = readFieldInput(field, el);
+  if (field.type === 'number' || field.type === 'money') {
+    const amount = field.type === 'money' ? value?.amount : value;
+    if (amount != null && !Number.isFinite(amount)) {
+      toast('Type a number.', 'error');
+      return;
+    }
+  }
+  const before = mine.values[field.id];
+  if (value == null) delete mine.values[field.id];
+  else mine.values[field.id] = value;
+  try {
+    await saveValue(mine.task.id, field.id, value);
+  } catch (error) {
+    toast(errorMessage(error), 'error');
+    if (before === undefined) delete mine.values[field.id];
+    else mine.values[field.id] = before;
+    if (current === mine) renderCustomFields();
+  }
 }
 
 function renderSubtasks() {
@@ -262,6 +314,7 @@ async function refresh() {
   data.task.campaign = mine.task.campaign;
   Object.assign(current, data);
   fillFields();
+  if (!mine.panel.querySelector('[data-custom-fields]').contains(document.activeElement)) renderCustomFields();
   // Wait to redraw subtasks while one is being edited
   if (!mine.panel.querySelector('[data-subtasks]').contains(document.activeElement)) renderSubtasks();
   loadHours();

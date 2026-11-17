@@ -5,6 +5,8 @@ import { supabase } from './supabase.js';
 const EVENTS = {
   tasks: 'tasks-changed',
   sections: 'sections-changed',
+  custom_fields: 'fields-changed',
+  task_field_values: 'field-values-changed',
   time_entries: 'time-changed',
   timers: 'timer-changed',
   comments: 'comments-changed',

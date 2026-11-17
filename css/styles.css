@@ -685,6 +685,29 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 
 /* Time: task panel, My tasks, settings, forms --------------------------------- */
 
+/* Custom fields: the project's Fields dialog, the task panel and List columns */
+.dialog.dialog-wide { width: min(720px, calc(100vw - 32px)); }
+.field-list { list-style: none; margin: 0 0 12px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); }
+.field-list li { display: flex; align-items: center; gap: 6px; padding: 8px 10px; }
+.field-list li + li { border-top: 1px solid var(--border); }
+.field-list .icon-btn:disabled { opacity: 0.35; cursor: default; }
+.field-list-name { display: grid; flex: 1; min-width: 0; }
+.fields-sets-title { font-size: 15px; margin: 20px 0 4px; }
+.field-sets { display: grid; gap: 8px; }
+.field-set { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--surface-2); border-radius: var(--radius); }
+.field-set > div { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.custom-fields { margin: 0 0 16px; }
+.custom-fields h3 { font-size: 15px; margin: 0 0 8px; }
+.custom-fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+.custom-fields-grid .field-wide { grid-column: 1 / -1; }
+.field-with-unit, .money-input { display: flex; align-items: center; gap: 6px; }
+.field-with-unit input { flex: 1; min-width: 0; }
+.money-input select { width: auto; flex: 0 0 auto; }
+.money-input input { flex: 1; min-width: 0; }
+.multi-choice { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 0; }
+.multi-choice-item { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.task-table .field-col { white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.task-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .time-box { margin: 4px 0 16px; padding: 12px 14px; background: var(--surface-2); border-radius: var(--radius); }
 .time-box h3 { font-size: 15px; margin: 0 0 8px; }
 .time-box-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -1158,6 +1181,8 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
   .board-sections { grid-template-columns: none; grid-auto-columns: 78vw; }
   .board-col { scroll-snap-align: start; }
   .panel-fields { grid-template-columns: 1fr; gap: 0; }
+  .custom-fields-grid { grid-template-columns: 1fr; }
+  .field-set { flex-wrap: wrap; }
   .subtask { flex-wrap: wrap; }
   .subtask-title { flex-basis: calc(100% - 70px); }
   .subtask-assignee, .subtask-due { flex: 1; width: auto; margin-left: 26px; }
