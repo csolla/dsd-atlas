@@ -109,7 +109,10 @@ export function renderDesignSystem(el) {
     ${section('task-sections', 'Task sections', 'Group a project\'s tasks into phases in the List view.', [
       'A header row per section (<code>.task-section-row</code>) with its name, task count and, for editors, ↑ ↓, Rename and Delete.',
       'Each section ends with its own <strong>+ Add task</strong>; an empty section says so.',
+      'On the Board, <strong>Columns: Status | Sections</strong> (a <code>.view-switch</code>) picks the columns. With section columns, each card shows its status as a <code>.card-status</code> label.',
     ], `
+      <p class="ds-gap"><span class="columns-switch"><span class="muted small">Columns</span><span class="view-switch" role="group" aria-label="Columns"><button type="button">Status</button><button type="button" aria-pressed="true">Sections</button></span></span></p>
+      <p class="ds-gap"><span class="card-status">In progress</span> <span class="card-status card-status-done">Done</span></p>
       <div class="table-wrap"><table class="table task-table">
         <tbody>
           <tr class="task-section-row"><th colspan="3"><div class="task-section-head"><h3>Pre-onboarding</h3><span class="muted">2</span><span class="spacer"></span>

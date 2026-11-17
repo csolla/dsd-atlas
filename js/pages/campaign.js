@@ -115,6 +115,13 @@ export async function renderCampaign(el, id, openTask = null) {
         </select>
         <select data-section-filter aria-label="Show section" hidden></select>
         <span class="spacer"></span>
+        <span class="columns-switch" data-columns-switch hidden>
+          <span class="muted small" id="columns-label-${esc(id)}">Columns</span>
+          <span class="view-switch" role="group" aria-labelledby="columns-label-${esc(id)}">
+            <button type="button" data-columns="status">Status</button>
+            <button type="button" data-columns="section">Sections</button>
+          </span>
+        </span>
         <div class="view-switch" role="group" aria-label="View">
           <button type="button" data-view="board">Board</button>
           <button type="button" data-view="list">List</button>
@@ -142,6 +149,10 @@ export async function renderCampaign(el, id, openTask = null) {
   el.querySelector('[data-find]').addEventListener('input', event => { page.m.q = event.target.value; drawTasks(page); });
   el.querySelector('[data-person]').addEventListener('change', event => { page.m.person = event.target.value; drawTasks(page); });
   el.querySelector('[data-section-filter]').addEventListener('change', event => { page.m.section = event.target.value; drawTasks(page); });
+  el.querySelectorAll('[data-columns]').forEach(button => button.addEventListener('click', () => {
+    page.m.columns = button.dataset.columns;
+    drawTasks(page);
+  }));
   el.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     page.view = button.dataset.view;
     try { localStorage.setItem(VIEW_KEY, page.view); } catch { /* not saved; fine */ }
@@ -203,6 +214,12 @@ async function loadHours(page) {
 
 // Filters: words in the task or its subtasks; a person as assignee of the
 // task or any of its subtasks
+// The Board's columns: sections (the default once a project has them, as in
+// the List) or statuses
+function sectionColumns(page) {
+  return page.sections.length > 0 && (page.m.columns || 'section') === 'section';
+}
+
 function matches(page, task, subtasks) {
   if (page.m.section && (task.section_id || 'none') !== page.m.section) return false;
   const q = page.m.q.trim().toLowerCase();
@@ -224,12 +241,20 @@ function drawTasks(page) {
   el.querySelectorAll('[data-view]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.view === view)));
 
-  drawSectionFilter(page);
+  // Section columns already split the board by section, so no section filter
+  const bySection = view === 'board' && sectionColumns(page);
+  if (bySection) page.m.section = '';
+  const columnsSwitch = el.querySelector('[data-columns-switch]');
+  columnsSwitch.hidden = view !== 'board' || !page.sections.length;
+  columnsSwitch.querySelectorAll('[data-columns]').forEach(button =>
+    button.setAttribute('aria-pressed', String((button.dataset.columns === 'section') === bySection)));
+  drawSectionFilter(page, bySection);
   const container = el.querySelector('[data-tasks]');
   const subtasksOf = id => tasks.filter(t => t.parent_id === id);
-  // The list shows sections even before they have tasks
-  if (view === 'list' && page.sections.length && !page.m.q.trim() && !page.m.person && !page.m.section) {
-    drawList(page, container, main, subtasksOf);
+  // Sections show even before they have tasks
+  if ((view === 'list' || bySection) && page.sections.length && !page.m.q.trim() && !page.m.person && !page.m.section) {
+    if (view === 'list') drawList(page, container, main, subtasksOf);
+    else drawSectionBoard(page, container, main, subtasksOf);
     return;
   }
   if (!main.length) {
@@ -245,6 +270,7 @@ function drawTasks(page) {
     return;
   }
   if (view === 'list') drawList(page, container, shown, subtasksOf);
+  else if (bySection) drawSectionBoard(page, container, shown, subtasksOf);
   else drawBoard(page, container, shown, subtasksOf, filtering);
 }
 
@@ -291,6 +317,95 @@ function assigneeBadge(task, size = 24) {
 
 // Board ---------------------------------------------------------------------
 
+// showStatus: on section columns, each card says its status
+function taskCard(page, task, subtasksOf, showStatus = false) {
+  return `
+    <article class="task-card ${task.status === 'done' ? 'is-done' : ''}" data-id="${esc(task.id)}" tabindex="0">
+      <p class="task-card-title">${esc(task.title)}</p>
+      <div class="task-card-meta">
+        ${showStatus ? `<span class="card-status card-status-${esc(task.status)}">${esc(TASK_STATUSES[task.status] || task.status)}</span>` : ''}
+        ${dueLabel(task)}
+        ${subtaskCount(subtasksOf(task.id))}
+        ${activityCounts(page, task.id)}
+        <span class="spacer"></span>
+        ${assigneeBadge(task)}
+      </div>
+    </article>`;
+}
+
+// The "+ Add task" box at the bottom of a column
+function wireColumnAdd(form, onTitle) {
+  const open = form.querySelector('.column-add-open');
+  const input = form.querySelector('input');
+  const close = () => { input.hidden = true; open.hidden = false; input.value = ''; };
+  open.addEventListener('click', () => { open.hidden = true; input.hidden = false; input.focus(); });
+  input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } });
+  input.addEventListener('blur', () => { if (!input.value.trim()) close(); });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const title = input.value.trim();
+    if (!title) return;
+    input.value = '';
+    await onTitle(title);
+  });
+}
+
+// Board with one column per section, like the List. Within a column: by
+// status, then board order. Drag a card to another column to change its
+// section; its status changes in the card's panel.
+function drawSectionBoard(page, container, main, subtasksOf) {
+  const { sections } = page;
+  const filtering = Boolean(page.m.q.trim() || page.m.person);
+  const edit = canEditWork() && !page.campaign.archived_at;
+  const known = new Set(sections.map(s => s.id));
+  const sorted = [...main].sort((a, b) =>
+    STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) || byPosition(a, b));
+  const inGroup = id => sorted.filter(t => (known.has(t.section_id) ? t.section_id : '') === id);
+  const columns = [
+    { id: '', name: 'No section', tasks: inGroup('') },
+    ...sections.map(s => ({ id: s.id, name: s.name, tasks: inGroup(s.id) })),
+  ].filter(c => (c.id ? !filtering || c.tasks.length : c.tasks.length));
+
+  container.innerHTML = `
+    <div class="board board-sections">
+      ${columns.map(c => `
+        <section class="board-col">
+          <header class="board-col-head"><h3>${esc(c.name)}</h3><span class="muted">${c.tasks.length}</span></header>
+          <div class="board-cards" data-group="${esc(c.id)}">
+            ${c.tasks.map(task => taskCard(page, task, subtasksOf, true)).join('')}
+          </div>
+          ${edit ? `<form class="column-add" data-column-add="${esc(c.id)}">
+            <button class="btn btn-ghost btn-small column-add-open" type="button">+ Add task</button>
+            <input placeholder="Task title, then Enter" aria-label="New task in ${esc(c.name)}" maxlength="300" hidden>
+          </form>` : ''}
+        </section>`).join('')}
+      ${canEditWork() && !filtering ? `<div class="board-col-new">
+        <button class="btn btn-ghost btn-small" type="button" data-section-new>+ Add section</button></div>` : ''}
+    </div>`;
+
+  container.querySelectorAll('.task-card').forEach(card => {
+    card.addEventListener('click', () => openTaskPanel(card.dataset.id));
+    card.addEventListener('keydown', event => { if (event.key === 'Enter') openTaskPanel(card.dataset.id); });
+  });
+  container.querySelector('[data-section-new]')?.addEventListener('click', () => openSectionForm(page, null));
+  container.querySelectorAll('[data-column-add]').forEach(form => wireColumnAdd(form, async title => {
+    const id = form.dataset.columnAdd;
+    await addTask(page, title, 'todo', id || null);
+    container.querySelector(`[data-column-add="${CSS.escape(id)}"] .column-add-open`)?.click();
+  }));
+  container.querySelectorAll('.board-cards').forEach(column => Sortable.create(column, {
+    group: 'section-board',
+    sort: false,
+    animation: 150,
+    delayOnTouchOnly: true,
+    delay: 150,
+    ghostClass: 'drag-ghost',
+    disabled: !canEditWork(),
+    onStart: () => { page.dragging = true; },
+    onEnd: event => moveToSection(page, event),
+  }));
+}
+
 function drawBoard(page, container, main, subtasksOf, filtering) {
   container.innerHTML = `
     <div class="board">
@@ -308,17 +423,7 @@ function drawBoard(page, container, main, subtasksOf, filtering) {
           <section class="board-col">
             <header class="board-col-head"><h3>${esc(label)}</h3><span class="muted">${total}</span></header>
             <div class="board-cards" data-status="${status}">
-              ${column.map(task => `
-                <article class="task-card ${status === 'done' ? 'is-done' : ''}" data-id="${esc(task.id)}" tabindex="0">
-                  <p class="task-card-title">${esc(task.title)}</p>
-                  <div class="task-card-meta">
-                    ${dueLabel(task)}
-                    ${subtaskCount(subtasksOf(task.id))}
-                    ${activityCounts(page, task.id)}
-                    <span class="spacer"></span>
-                    ${assigneeBadge(task)}
-                  </div>
-                </article>`).join('')}
+              ${column.map(task => taskCard(page, task, subtasksOf)).join('')}
             </div>
             ${hidden ? `<button class="btn btn-ghost btn-small column-more" type="button" data-show-done>Show all ${total} done</button>` : ''}
             ${status === 'done' && page.m.showAllDone && total > DONE_SHOWN && !filtering
@@ -338,23 +443,11 @@ function drawBoard(page, container, main, subtasksOf, filtering) {
   container.querySelector('[data-show-done]')?.addEventListener('click', () => { page.m.showAllDone = true; drawTasks(page); });
   container.querySelector('[data-hide-done]')?.addEventListener('click', () => { page.m.showAllDone = false; drawTasks(page); });
 
-  container.querySelectorAll('[data-column-add]').forEach(form => {
-    const open = form.querySelector('.column-add-open');
-    const input = form.querySelector('input');
-    const close = () => { input.hidden = true; open.hidden = false; input.value = ''; };
-    open.addEventListener('click', () => { open.hidden = true; input.hidden = false; input.focus(); });
-    input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } });
-    input.addEventListener('blur', () => { if (!input.value.trim()) close(); });
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-      const title = input.value.trim();
-      if (!title) return;
-      input.value = '';
-      await addTask(page, title, form.dataset.columnAdd);
-      // Keep the box open in the same column for the next one
-      container.querySelector(`[data-column-add="${form.dataset.columnAdd}"] .column-add-open`)?.click();
-    });
-  });
+  container.querySelectorAll('[data-column-add]').forEach(form => wireColumnAdd(form, async title => {
+    await addTask(page, title, form.dataset.columnAdd);
+    // Keep the box open in the same column for the next one
+    container.querySelector(`[data-column-add="${form.dataset.columnAdd}"] .column-add-open`)?.click();
+  }));
 
   container.querySelectorAll('.board-cards').forEach(column => Sortable.create(column, {
     group: 'tasks',
@@ -468,17 +561,7 @@ function drawList(page, container, main, subtasksOf) {
     body.querySelector('[data-section-delete]')?.addEventListener('click', () => removeSection(page, section));
     const form = body.querySelector('[data-section-add]');
     if (form) {
-      const open = form.querySelector('.column-add-open');
-      const input = form.querySelector('input');
-      const close = () => { input.hidden = true; open.hidden = false; input.value = ''; };
-      open.addEventListener('click', () => { open.hidden = true; input.hidden = false; input.focus(); });
-      input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } });
-      input.addEventListener('blur', () => { if (!input.value.trim()) close(); });
-      form.addEventListener('submit', async event => {
-        event.preventDefault();
-        const title = input.value.trim();
-        if (!title) return;
-        input.value = '';
+      wireColumnAdd(form, async title => {
         await addTask(page, title, 'todo', id || null);
         container.querySelector(`[data-section-add="${CSS.escape(id)}"] .column-add-open`)?.click();
       });
@@ -528,10 +611,10 @@ async function setStatus(page, task, status) {
 // Sections --------------------------------------------------------------------
 
 // The section filter, shown once the project has sections
-function drawSectionFilter(page) {
+function drawSectionFilter(page, bySection = false) {
   const select = page.el.querySelector('[data-section-filter]');
   if (page.m.section && page.m.section !== 'none' && !page.sections.some(s => s.id === page.m.section)) page.m.section = '';
-  select.hidden = !page.sections.length;
+  select.hidden = !page.sections.length || bySection;
   select.innerHTML = `<option value="">All sections</option><option value="none">No section</option>
     ${options(Object.fromEntries(page.sections.map(s => [s.id, s.name])), page.m.section)}`;
   select.value = page.m.section;
