@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { esc } from './ui.js';
+import { state } from './state.js';
 
 // Search across everything you can see: projects, sections, tasks (and
 // subtasks) and comments. The database's permission rules decide what comes
@@ -74,6 +75,28 @@ export function snippet(text, q, around = 70) {
   const start = Math.max(0, at - around);
   const end = Math.min(value.length, at + q.trim().length + around);
   return `${start > 0 ? '…' : ''}${value.slice(start, end)}${end < value.length ? '…' : ''}`;
+}
+
+// People whose name (or email) contains the words: active people who can be
+// given tasks. The people list is already loaded, so no query is needed.
+export function matchPeople(q, limit = 5) {
+  const lower = q.trim().toLowerCase();
+  if (lower.length < MIN_LENGTH) return [];
+  const starts = p => p.name.toLowerCase().split(/\s+/).some(word => word.startsWith(lower)) ? 0 : 1;
+  return state.people
+    .filter(p => p.active && p.role !== 'director'
+      && (p.name.toLowerCase().includes(lower) || String(p.email || '').toLowerCase().split('@')[0].includes(lower)))
+    .sort((a, b) => starts(a) - starts(b) || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
+// Tasks and subtasks assigned to someone, in every project you can see
+// (archived projects left out), soonest due first
+export async function tasksAssignedTo(personId, { includeDone = false } = {}) {
+  let query = supabase.from('tasks').select(TASK).eq('assignee_id', personId);
+  if (!includeDone) query = query.neq('status', 'done');
+  const data = await rows(query.order('due_date', { ascending: true, nullsFirst: false }).limit(500));
+  return data.filter(t => t.campaign && !t.campaign.archived_at);
 }
 
 // A few quick matches by name for the top bar's suggestions: projects and

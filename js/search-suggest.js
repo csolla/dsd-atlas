@@ -1,9 +1,10 @@
-import { esc } from './ui.js';
-import { suggest, highlight, MIN_LENGTH } from './search.js';
-import { searchHref } from './pages/search.js';
+import { esc, avatar } from './ui.js';
+import { departmentName } from './departments.js';
+import { suggest, matchPeople, highlight, MIN_LENGTH } from './search.js';
+import { searchHref, personHref } from './pages/search.js';
 
-// Suggestions under the top bar's search box: matching projects and tasks
-// while typing, plus "Search everything". Up/Down move, Enter opens,
+// Suggestions under the top bar's search box: matching people, projects and
+// tasks while typing, plus "Search everything". Up/Down move, Enter opens,
 // Escape closes. Enter with nothing picked opens the Search page.
 
 export function mountSearchSuggestions(form) {
@@ -35,6 +36,12 @@ export function mountSearchSuggestions(form) {
   const draw = (found, q) => {
     const flags = p => `${p.private ? ' <span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}${p.archived_at ? ' <span class="private-flag">Archived</span>' : ''}`;
     items = [
+      ...found.people.map(p => ({
+        group: 'People',
+        href: personHref(p.id),
+        html: `<span class="suggest-title person">${avatar(p, 22)}${highlight(p.name, q)}</span>
+          <span class="suggest-meta">${departmentName(p.department_id) ? `${esc(departmentName(p.department_id))} · ` : ''}Their tasks</span>`,
+      })),
       ...found.projects.map(p => ({
         group: 'Projects',
         href: `#/campaigns/${p.id}`,
@@ -54,7 +61,7 @@ export function mountSearchSuggestions(form) {
         ? `<li class="suggest-group" role="presentation">${esc(item.group)}</li>` : '';
       lastGroup = item.group;
       return `${heading}<li role="option" id="suggest-${i}" data-i="${i}" aria-selected="false">${item.html}</li>`;
-    }).join('') + (found.projects.length || found.tasks.length ? '' : '<li class="suggest-none" role="presentation">No projects or tasks with that name</li>');
+    }).join('') + (found.people.length || found.projects.length || found.tasks.length ? '' : '<li class="suggest-none" role="presentation">No people, projects or tasks with that name</li>');
     active = -1;
     list.hidden = false;
     input.setAttribute('aria-expanded', 'true');
@@ -90,7 +97,7 @@ export function mountSearchSuggestions(form) {
       const mine = ++latest;
       let found;
       try {
-        found = await suggest(q);
+        found = { ...(await suggest(q)), people: matchPeople(q, 3) };
       } catch {
         return;
       }
