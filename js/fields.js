@@ -163,9 +163,10 @@ export function formatValue(field, value) {
   }
 }
 
-// The input for a field in the task panel. Choices no longer offered (an
-// option renamed or removed) are kept for the task that has them.
-export function fieldInput(field, value, { disabled = false } = {}) {
+// The input for a field (task panel, or a List cell with inline: true).
+// Choices no longer offered (an option renamed or removed) are kept for the
+// task that has them.
+export function fieldInput(field, value, { disabled = false, inline = false } = {}) {
   const attrs = `data-field-id="${esc(field.id)}" aria-label="${esc(field.name)}" ${disabled ? 'disabled' : ''}`;
   const opts = (list, selected) => list.map(o => `<option value="${esc(o)}" ${selected.includes(o) ? 'selected' : ''}>${esc(o)}</option>`).join('');
   switch (field.type) {
@@ -190,6 +191,15 @@ export function fieldInput(field, value, { disabled = false } = {}) {
       const list = field.settings?.options || [];
       const chosen = Array.isArray(value) ? value : [];
       const all = [...list, ...chosen.filter(v => !list.includes(v))];
+      if (inline) {
+        // In a List cell: a compact dropdown of tick boxes
+        return `<details class="multi-cell" ${attrs}>
+          <summary>${chosen.length ? esc(chosen.join(', ')) : '<span class="muted">—</span>'}</summary>
+          <div class="multi-cell-menu" role="group" aria-label="${esc(field.name)}">${all.map(o => `
+            <label class="multi-choice-item"><input type="checkbox" value="${esc(o)}" ${chosen.includes(o) ? 'checked' : ''}> ${esc(o)}</label>`).join('')
+            || '<span class="muted small">No choices yet. Add some in Fields.</span>'}</div>
+        </details>`;
+      }
       return `<div class="multi-choice" ${attrs} role="group">${all.map(o => `
         <label class="multi-choice-item"><input type="checkbox" value="${esc(o)}" ${chosen.includes(o) ? 'checked' : ''} ${disabled ? 'disabled' : ''}> ${esc(o)}</label>`).join('')
         || '<span class="muted small">No choices yet. Add some in Fields.</span>'}</div>`;

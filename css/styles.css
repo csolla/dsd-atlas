@@ -484,6 +484,11 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .board-col-new { padding-top: 6px; min-width: 140px; }
 .card-status { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .card-status-done { color: var(--muted); }
+.task-card-fields { display: flex; flex-wrap: wrap; gap: 4px; margin: -2px 0 8px; }
+.card-field { display: inline-block; max-width: 100%; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px; font-weight: 550;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-field-name { color: var(--muted); font-weight: 500; }
+.card-field-more { color: var(--muted); }
 
 .task-card {
   background: var(--surface);
@@ -707,6 +712,21 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .multi-choice { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 0; }
 .multi-choice-item { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 .task-table .field-col { white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.task-table .field-cell { padding-top: 6px; padding-bottom: 6px; cursor: default; }
+.field-cell input, .field-cell select { min-height: 30px; padding: 3px 8px; }
+.field-cell input[type="text"], .field-cell.field-person select, .field-cell.field-choice select { width: 170px; }
+.field-cell.field-number input { width: 100px; }
+.field-cell.field-date input { width: 150px; }
+.field-cell .money-input input { width: 110px; flex: 0 0 auto; }
+.field-cell .field-with-unit { flex-wrap: nowrap; }
+.multi-cell { position: relative; }
+.multi-cell summary { list-style: none; cursor: pointer; min-height: 30px; max-width: 220px; padding: 4px 26px 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+.multi-cell summary::-webkit-details-marker { display: none; }
+.multi-cell summary::after { content: '▾'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.multi-cell summary:focus-visible { outline: 3px solid var(--focus); }
+.multi-cell-menu { position: fixed; z-index: 30; display: grid; gap: 4px; min-width: 220px; max-width: 300px; max-height: 260px; overflow-y: auto; padding: 8px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); }
 .task-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .time-box { margin: 4px 0 16px; padding: 12px 14px; background: var(--surface-2); border-radius: var(--radius); }
 .time-box h3 { font-size: 15px; margin: 0 0 8px; }

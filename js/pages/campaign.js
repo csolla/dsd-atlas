@@ -15,7 +15,7 @@ import { unitLine } from '../departments.js';
 import { loadAccess, projectAudience, accessNames } from '../access.js';
 import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
-import { loadFields, loadProjectValues, formatValue } from '../fields.js';
+import { loadFields, loadProjectValues, formatValue, fieldInput, readFieldInput, saveValue } from '../fields.js';
 import { openFieldsDialog } from '../fields-dialog.js';
 
 const DONE_SHOWN = 10;
@@ -164,7 +164,7 @@ export async function renderCampaign(el, id, openTask = null) {
       page.tasks = await loadCampaignTasks(id);
       drawTasks(page);
     } catch { /* keep what's shown */ }
-  }, { isBusy: () => page.dragging || page.el.contains(document.activeElement) && document.activeElement.matches('.column-add input') });
+  }, { isBusy: () => page.dragging || editingField(page) || page.el.contains(document.activeElement) && document.activeElement.matches('.column-add input') });
 
   el.querySelector('[data-fields]')?.addEventListener('click', () => openFieldsDialog(campaign, {
     countValues: fieldId => Object.values(page.values).filter(v => v[fieldId] !== undefined).length,
@@ -181,7 +181,7 @@ export async function renderCampaign(el, id, openTask = null) {
       page.values = await loadProjectValues(id);
       drawTasks(page);
     } catch { /* keep what's shown */ }
-  }, { isBusy: () => page.dragging });
+  }, { isBusy: () => page.dragging || editingField(page) });
 
   onLiveChange(el, 'sections-changed', async () => {
     try {
@@ -323,6 +323,7 @@ function taskCard(page, task, subtasksOf, showStatus = false) {
   return `
     <article class="task-card ${task.status === 'done' ? 'is-done' : ''}" data-id="${esc(task.id)}" tabindex="0">
       <p class="task-card-title">${esc(task.title)}</p>
+      ${cardFields(page, task)}
       <div class="task-card-meta">
         ${showStatus ? `<span class="card-status card-status-${esc(task.status)}">${esc(TASK_STATUSES[task.status] || task.status)}</span>` : ''}
         ${dueLabel(task)}
@@ -332,6 +333,25 @@ function taskCard(page, task, subtasksOf, showStatus = false) {
         ${assigneeBadge(task)}
       </div>
     </article>`;
+}
+
+// The task's filled-in fields as tags, in the project's field order. Choices
+// and people show just the value; other types say which field it is, so a
+// date isn't mistaken for the due date.
+const CARD_FIELDS_SHOWN = 4;
+function cardFields(page, task) {
+  const values = page.values[task.id] || {};
+  const tags = page.fields
+    .map(f => ({ f, text: formatValue(f, values[f.id]) }))
+    .filter(t => t.text);
+  if (!tags.length) return '';
+  const shown = tags.slice(0, CARD_FIELDS_SHOWN);
+  const more = tags.length - shown.length;
+  return `<div class="task-card-fields">${shown.map(({ f, text }) => `
+    <span class="card-field" title="${esc(`${f.name}: ${text}`)}">${['choice', 'multi', 'person'].includes(f.type)
+      ? esc(text) : `<span class="card-field-name">${esc(f.name)}</span> ${esc(text)}`}</span>`).join('')}
+    ${more ? `<span class="card-field card-field-more" title="${esc(tags.slice(CARD_FIELDS_SHOWN).map(t => `${t.f.name}: ${t.text}`).join('\n'))}">+${more} more</span>` : ''}
+  </div>`;
 }
 
 // The "+ Add task" box at the bottom of a column
@@ -513,7 +533,10 @@ function drawList(page, container, main, subtasksOf) {
         <td class="nowrap">${dueLabel(task) || '<span class="muted">—</span>'}</td>
         <td><select data-status aria-label="Status">${options(TASK_STATUSES, task.status)}</select></td>
         ${page.fields.map(f => {
-          const text = formatValue(f, page.values[task.id]?.[f.id]);
+          const value = page.values[task.id]?.[f.id];
+          // Editors fill fields right in the List; others see the values
+          if (canEditWork()) return `<td class="field-cell field-${esc(f.type)}">${fieldInput(f, value, { inline: true })}</td>`;
+          const text = formatValue(f, value);
           return `<td class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}" title="${esc(text)}">${text ? esc(text) : '<span class="muted">—</span>'}</td>`;
         }).join('')}
       </tr>`;
@@ -580,7 +603,7 @@ function drawList(page, container, main, subtasksOf) {
         delayOnTouchOnly: true,
         delay: 150,
         draggable: 'tr[data-id]',
-        filter: 'input, select',
+        filter: 'input, select, .field-cell',
         preventOnFilter: false,
         ghostClass: 'drag-ghost',
         onStart: () => { page.dragging = true; },
@@ -590,15 +613,77 @@ function drawList(page, container, main, subtasksOf) {
   });
   container.querySelector('[data-section-new]')?.addEventListener('click', () => openSectionForm(page, null));
 
+  // Fields filled right in the List
+  const table = container.querySelector('.task-table');
+  table.addEventListener('change', event => {
+    if (event.target.closest('.field-cell')) saveListField(page, event.target);
+  });
+  // Several-choice cells: one open at a time, shown over the table
+  table.addEventListener('toggle', event => {
+    const cell = event.target;
+    if (!cell.matches?.('details.multi-cell') || !cell.open) return;
+    table.querySelectorAll('details.multi-cell[open]').forEach(other => { if (other !== cell) other.open = false; });
+    const box = cell.querySelector('summary').getBoundingClientRect();
+    const menu = cell.querySelector('.multi-cell-menu');
+    menu.style.top = `${Math.round(box.bottom + 4)}px`;
+    menu.style.left = `${Math.round(Math.min(box.left, window.innerWidth - 300))}px`;
+  }, true);
+
   container.querySelectorAll('tbody tr[data-id]').forEach(row => {
     const task = page.tasks.find(t => t.id === row.dataset.id);
     row.addEventListener('click', event => {
-      if (!event.target.closest('input, select')) openTaskPanel(task.id);
+      if (!event.target.closest('input, select, .field-cell')) openTaskPanel(task.id);
     });
     row.querySelector('[data-done]').addEventListener('change', event =>
       setStatus(page, task, event.target.checked ? 'done' : 'todo'));
     row.querySelector('[data-status]').addEventListener('change', event => setStatus(page, task, event.target.value));
   });
+}
+
+// Saves a field changed in a List cell
+async function saveListField(page, target) {
+  const el = target.closest('[data-field-id]') || target.closest('.money-input')?.querySelector('[data-field-id]');
+  const taskId = el?.closest('tr[data-id]')?.dataset.id;
+  const field = page.fields.find(f => f.id === el?.dataset.fieldId);
+  if (!taskId || !field) return;
+  const value = readFieldInput(field, el);
+  const amount = field.type === 'money' ? value?.amount : value;
+  if ((field.type === 'number' || field.type === 'money') && amount != null && !Number.isFinite(amount)) {
+    toast('Type a number.', 'error');
+    return;
+  }
+  const values = (page.values[taskId] ||= {});
+  const before = values[field.id];
+  if (value == null || (Array.isArray(value) && !value.length)) delete values[field.id];
+  else values[field.id] = value;
+  if (field.type === 'multi') {
+    el.querySelector('summary').innerHTML = value?.length ? esc(value.join(', ')) : '<span class="muted">—</span>';
+  }
+  try {
+    await saveValue(taskId, field.id, value);
+  } catch (error) {
+    if (before === undefined) delete values[field.id];
+    else values[field.id] = before;
+    drawTasks(page);
+    toast(errorMessage(error), 'error');
+  }
+}
+
+// An open several-choice cell closes on a click elsewhere, Esc or scrolling
+const closeMultiCells = except => document.querySelectorAll('details.multi-cell[open]').forEach(d => {
+  if (!except || !d.contains(except)) d.open = false;
+});
+document.addEventListener('click', event => closeMultiCells(event.target));
+document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMultiCells(); });
+window.addEventListener('scroll', event => {
+  if (!event.target.closest?.('.multi-cell-menu')) closeMultiCells();
+}, true);
+
+// Someone is filling a field in the List: wait before redrawing it
+function editingField(page) {
+  const active = document.activeElement;
+  return Boolean(page.el.querySelector('details.multi-cell[open]')
+    || (active && page.el.contains(active) && active.closest('.field-cell')));
 }
 
 async function setStatus(page, task, status) {
