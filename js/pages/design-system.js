@@ -134,7 +134,7 @@ export function renderDesignSystem(el) {
       'In the Fields dialog, each field is a row (<code>.field-list</code>) with its type, ↑ ↓, Edit and Delete; ready-made sets are cards (<code>.field-set</code>) with an Add button.',
       'In the task panel, fields sit in a two-column grid (<code>.custom-fields-grid</code>); text and several-choice fields take the full width. Money pairs a currency box with the amount (<code>.money-input</code>).',
       'In the List, editors fill fields right in their cells (<code>.field-cell</code>): compact inputs, and several-choice fields open a small tick-box list (<code>.multi-cell</code>). Directors see plain values; numbers and money right-aligned, empty values as a dash.',
-      'On cards, filled-in fields are outlined tags (<code>.card-field</code>) under the title: choices and people show just the value, other types are prefixed with the field name. At most four, then “+N more”.',
+      'On cards, filled-in fields are outlined tags (<code>.card-field</code>) under the title, showing only the value; the field name is in the tag's hover text. At most four, then “+N more”.',
     ], `
       <ul class="field-list">
         <li><span class="field-list-name"><strong>Total amount</strong><span class="muted small">Money · €, US$, GBP</span></span>
@@ -144,7 +144,7 @@ export function renderDesignSystem(el) {
           <button class="icon-btn" type="button" aria-label="Move up">↑</button><button class="icon-btn" type="button" disabled aria-label="Move down">↓</button>
           <button class="btn btn-ghost btn-small" type="button">Edit</button><button class="btn btn-ghost btn-small" type="button">Delete</button></li>
       </ul>
-      <div class="task-card-fields ds-gap"><span class="card-field">Done</span><span class="card-field">Wire transfer</span><span class="card-field"><span class="card-field-name">Total amount</span> € 550.55</span><span class="card-field card-field-more">+3 more</span></div>
+      <div class="task-card-fields ds-gap"><span class="card-field">Done</span><span class="card-field">Wire transfer</span><span class="card-field" title="Total amount: € 550.55">€ 550.55</span><span class="card-field card-field-more">+3 more</span></div>
       <div class="field-set"><div><strong>Invoices</strong><span class="muted small">Amount, invoice date and number, payment and accounting codes.</span></div><button class="btn btn-small" type="button">Add</button></div>
       <div class="custom-fields-grid ds-gap">
         <div class="field"><span>Total amount</span><div class="money-input"><select aria-label="Currency"><option>€</option><option>US$</option></select><input type="number" value="8610.01" aria-label="Total amount"></div></div>

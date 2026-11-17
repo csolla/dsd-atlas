@@ -335,9 +335,8 @@ function taskCard(page, task, subtasksOf, showStatus = false) {
     </article>`;
 }
 
-// The task's filled-in fields as tags, in the project's field order. Choices
-// and people show just the value; other types say which field it is, so a
-// date isn't mistaken for the due date.
+// The task's filled-in fields as tags, in the project's field order: just
+// the values (hover a tag to see its field).
 const CARD_FIELDS_SHOWN = 4;
 function cardFields(page, task) {
   const values = page.values[task.id] || {};
@@ -348,8 +347,7 @@ function cardFields(page, task) {
   const shown = tags.slice(0, CARD_FIELDS_SHOWN);
   const more = tags.length - shown.length;
   return `<div class="task-card-fields">${shown.map(({ f, text }) => `
-    <span class="card-field" title="${esc(`${f.name}: ${text}`)}">${['choice', 'multi', 'person'].includes(f.type)
-      ? esc(text) : `<span class="card-field-name">${esc(f.name)}</span> ${esc(text)}`}</span>`).join('')}
+    <span class="card-field" title="${esc(`${f.name}: ${text}`)}">${esc(text)}</span>`).join('')}
     ${more ? `<span class="card-field card-field-more" title="${esc(tags.slice(CARD_FIELDS_SHOWN).map(t => `${t.f.name}: ${t.text}`).join('\n'))}">+${more} more</span>` : ''}
   </div>`;
 }
