@@ -1,7 +1,7 @@
 import { supabase } from '../supabase.js';
 import { state } from '../state.js';
 import { onTasksChanged, onLiveChange } from '../realtime.js';
-import { createTask, updateTask, deleteTask, byPosition } from '../tasks.js';
+import { createTask, updateTask, deleteTask, byPosition, loadSections } from '../tasks.js';
 import { loadTasksHours } from '../time.js';
 import { startTimer } from '../timer.js';
 import { esc, options, fmtHours, toast, errorMessage, confirmDialog, TASK_STATUSES } from '../ui.js';
@@ -56,6 +56,7 @@ export async function openTaskPanel(taskId, { highlight = null } = {}) {
   setMentionAudience(projectAudience(data.task.campaign, data.access));
   render();
   onTasksChanged(panel, refresh, { delay: 300 });
+  onLiveChange(panel, 'sections-changed', refresh, { delay: 300 });
   onLiveChange(panel, 'time-changed', loadHours, { delay: 300 });
   loadHours();
 }
@@ -87,7 +88,9 @@ async function loadTask(taskId) {
   const { data: subtasks, error: subError } = await supabase.from('tasks').select('*').eq('parent_id', taskId);
   if (subError) throw subError;
   const access = task.campaign.private ? await loadAccess(task.campaign_id) : [];
-  return { task, subtasks: subtasks.sort(byPosition), access };
+  // Only main tasks have a section; subtasks go with their parent
+  const sections = task.parent_id ? [] : await loadSections(task.campaign_id).catch(() => []);
+  return { task, subtasks: subtasks.sort(byPosition), access, sections };
 }
 
 // People who can be assigned work (on a private project, only those who
@@ -120,6 +123,8 @@ function render() {
           <select data-field="assignee_id"></select></label>
         <label class="field"><span>Due date</span>
           <input type="date" data-field="due_date"></label>
+        <label class="field" data-section-field hidden><span>Section</span>
+          <select data-field="section_id"></select></label>
       </div>
       <label class="field"><span>Description</span>
         <textarea data-field="description" rows="5" placeholder="Add more detail"></textarea></label>
@@ -182,6 +187,10 @@ function fillFields() {
   panel.querySelectorAll('[data-field]').forEach(input => {
     if (input === document.activeElement) return;
     if (input.dataset.field === 'assignee_id') input.innerHTML = assigneeOptions(task.assignee_id);
+    if (input.dataset.field === 'section_id') {
+      input.innerHTML = `<option value="">No section</option>${options(Object.fromEntries(current.sections.map(s => [s.id, s.name])), task.section_id)}`;
+      input.closest('[data-section-field]').hidden = !current.sections.length;
+    }
     input.value = task[input.dataset.field] ?? '';
   });
 }
@@ -269,7 +278,7 @@ async function saveField(input) {
     }
   } else if (field === 'description') {
     value = value.trim() || null;
-  } else if (field === 'assignee_id' || field === 'due_date') {
+  } else if (field === 'assignee_id' || field === 'due_date' || field === 'section_id') {
     value = value || null;
   }
   if (value === current.task[field]) return;

@@ -106,6 +106,24 @@ export function renderDesignSystem(el) {
         <p class="form-success">Success message: confirm what happened.</p>
       </div>`)}
 
+    ${section('task-sections', 'Task sections', 'Group a project\'s tasks into phases in the List view.', [
+      'A header row per section (<code>.task-section-row</code>) with its name, task count and, for editors, ↑ ↓, Rename and Delete.',
+      'Each section ends with its own <strong>+ Add task</strong>; an empty section says so.',
+    ], `
+      <div class="table-wrap"><table class="table task-table">
+        <tbody>
+          <tr class="task-section-row"><th colspan="3"><div class="task-section-head"><h3>Pre-onboarding</h3><span class="muted">2</span><span class="spacer"></span>
+            <button class="icon-btn" type="button" disabled aria-label="Move up">↑</button><button class="icon-btn" type="button" aria-label="Move down">↓</button>
+            <button class="btn btn-ghost btn-small" type="button">Rename</button><button class="btn btn-ghost btn-small" type="button">Delete</button></div></th></tr>
+          <tr><td>Send the welcome pack</td><td>Ana</td><td>To do</td></tr>
+          <tr class="task-section-add"><td colspan="3"><span class="btn btn-ghost btn-small column-add-open">+ Add task</span></td></tr>
+        </tbody>
+        <tbody>
+          <tr class="task-section-row"><th colspan="3"><div class="task-section-head"><h3>Graduation</h3><span class="muted">0</span></div></th></tr>
+          <tr class="task-section-empty"><td colspan="3" class="muted small">No tasks in this section yet.</td></tr>
+        </tbody>
+      </table></div>`)}
+
     ${section('picks', 'Pick lists', 'Choose several items from a longer list, such as who can see a private project.', [
       'A dropdown adds one item at a time; each added item shows as a chip below it, with × to remove it. Items already added leave the dropdown.',
       'Long lists (people) are grouped in the dropdown, by department.',

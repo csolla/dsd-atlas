@@ -96,7 +96,9 @@ const SECTIONS = [
         <li>Open the project and type a title in <strong>Add a task and press Enter</strong>. It goes to To do.</li>
         <li>On the <strong>Board</strong>, drag cards between To do, In progress, In review and Done, and up or down to reorder.</li>
         <li><strong>List</strong> shows the same tasks as a table.</li>
-        <li>Click a card to open its side panel: assignee, due date, status and description save as you leave each field.</li>
+        <li><strong>Sections</strong> split a project into phases or groups, like Asana's (for example Pre-onboarding, During coaching, Graduation). In <strong>List</strong>, click <strong>+ Add section</strong> under the table. Each section has its own <strong>+ Add task</strong>, ↑ ↓ to change its place, Rename and Delete. Drag a task onto another section to move it, or change <strong>Section</strong> in its side panel. Deleting a section keeps its tasks, under No section.</li>
+        <li>Once a project has sections, a section filter appears next to the person filter. While a section is picked, new tasks go into it, on the Board too.</li>
+        <li>Click a card to open its side panel: assignee, due date, section, status and description save as you leave each field.</li>
         <li>Add <strong>subtasks</strong> at the bottom of the panel, each with its own optional assignee and date. Assigning a task doesn't assign its subtasks.</li>
       </ol>
       <h3>Deleting</h3>

@@ -5,10 +5,11 @@ import { onTasksChanged, onLiveChange } from '../realtime.js';
 import { loadCampaignHours } from '../time.js';
 import {
   loadCampaignTasks, createTask, updateTask, positionBetween, byPosition, tasksDonePct, isOverdue, friendlyDue,
+  loadSections, createSection, updateSection, deleteSection,
 } from '../tasks.js';
 import {
   esc, options, statusPill, avatar, fmtCompactRange, fmtDate, fmtHours, toast, errorMessage,
-  confirmDialog, TASK_STATUSES,
+  confirmDialog, formDialog, TASK_STATUSES,
 } from '../ui.js';
 import { unitLine } from '../departments.js';
 import { loadAccess, projectAudience, accessNames } from '../access.js';
@@ -29,11 +30,12 @@ function savedView() {
 export async function renderCampaign(el, id, openTask = null) {
   el.innerHTML = '<p class="muted">Loading project…</p>';
 
-  const [campaignResult, tasksResult] = await Promise.allSettled([
+  const [campaignResult, tasksResult, sectionsResult] = await Promise.allSettled([
     supabase.from('campaigns').select('*').eq('id', id).maybeSingle(),
     loadCampaignTasks(id),
+    loadSections(id),
   ]);
-  const error = campaignResult.reason || campaignResult.value?.error || tasksResult.reason;
+  const error = campaignResult.reason || campaignResult.value?.error || tasksResult.reason || sectionsResult.reason;
   if (error) {
     el.innerHTML = `<p class="form-error">${esc(errorMessage(error))}</p>`;
     return;
@@ -46,8 +48,10 @@ export async function renderCampaign(el, id, openTask = null) {
     return;
   }
 
-  memory[id] ||= { q: '', person: '', assignee: '', due: '', showAllDone: false, details: false };
-  const page = { el, campaign, tasks: tasksResult.value, view: savedView(), dragging: false, counts: {}, m: memory[id] };
+  memory[id] ||= { q: '', person: '', section: '', assignee: '', due: '', showAllDone: false, details: false };
+  const page = {
+    el, campaign, tasks: tasksResult.value, sections: sectionsResult.value, view: savedView(), dragging: false, counts: {}, m: memory[id],
+  };
   const owner = personById(campaign.owner_id);
   // On a private project, only people who can see it can be assigned
   const access = campaign.private ? await loadAccess(id).catch(() => []) : [];
@@ -109,6 +113,7 @@ export async function renderCampaign(el, id, openTask = null) {
           <option value="none" ${page.m.person === 'none' ? 'selected' : ''}>Unassigned</option>
           ${options(Object.fromEntries(team.filter(p => p.id !== state.me.id).map(p => [p.id, p.name])), page.m.person)}
         </select>
+        <select data-section-filter aria-label="Show section" hidden></select>
         <span class="spacer"></span>
         <div class="view-switch" role="group" aria-label="View">
           <button type="button" data-view="board">Board</button>
@@ -136,6 +141,7 @@ export async function renderCampaign(el, id, openTask = null) {
   }
   el.querySelector('[data-find]').addEventListener('input', event => { page.m.q = event.target.value; drawTasks(page); });
   el.querySelector('[data-person]').addEventListener('change', event => { page.m.person = event.target.value; drawTasks(page); });
+  el.querySelector('[data-section-filter]').addEventListener('change', event => { page.m.section = event.target.value; drawTasks(page); });
   el.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     page.view = button.dataset.view;
     try { localStorage.setItem(VIEW_KEY, page.view); } catch { /* not saved; fine */ }
@@ -155,6 +161,13 @@ export async function renderCampaign(el, id, openTask = null) {
       drawTasks(page);
     } catch { /* keep what's shown */ }
   }, { isBusy: () => page.dragging || page.el.contains(document.activeElement) && document.activeElement.matches('.column-add input') });
+
+  onLiveChange(el, 'sections-changed', async () => {
+    try {
+      page.sections = await loadSections(id);
+      drawTasks(page);
+    } catch { /* keep what's shown */ }
+  }, { isBusy: () => page.dragging });
 }
 
 function meter(pct, level) {
@@ -191,6 +204,7 @@ async function loadHours(page) {
 // Filters: words in the task or its subtasks; a person as assignee of the
 // task or any of its subtasks
 function matches(page, task, subtasks) {
+  if (page.m.section && (task.section_id || 'none') !== page.m.section) return false;
   const q = page.m.q.trim().toLowerCase();
   const person = page.m.person === 'me' ? state.me.id : page.m.person;
   const textOk = !q || [task, ...subtasks].some(t => t.title.toLowerCase().includes(q));
@@ -210,16 +224,24 @@ function drawTasks(page) {
   el.querySelectorAll('[data-view]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.view === view)));
 
+  drawSectionFilter(page);
   const container = el.querySelector('[data-tasks]');
   const subtasksOf = id => tasks.filter(t => t.parent_id === id);
-  if (!main.length) {
-    container.innerHTML = `<div class="empty-state"><p>No tasks yet.${canEditWork() ? ' Type a title above and press Enter to add the first one.' : ''}</p></div>`;
+  // The list shows sections even before they have tasks
+  if (view === 'list' && page.sections.length && !page.m.q.trim() && !page.m.person && !page.m.section) {
+    drawList(page, container, main, subtasksOf);
     return;
   }
-  const filtering = Boolean(page.m.q.trim() || page.m.person);
+  if (!main.length) {
+    container.innerHTML = `<div class="empty-state"><p>No tasks yet.${canEditWork() ? ' Type a title above and press Enter to add the first one.' : ''}</p>
+      ${canEditWork() && view === 'list' ? '<button class="btn btn-small" type="button" data-section-new>+ Add section</button>' : ''}</div>`;
+    container.querySelector('[data-section-new]')?.addEventListener('click', () => openSectionForm(page, null));
+    return;
+  }
+  const filtering = Boolean(page.m.q.trim() || page.m.person || page.m.section);
   const shown = main.filter(t => matches(page, t, subtasksOf(t.id)));
   if (!shown.length) {
-    container.innerHTML = '<div class="empty-state"><p>No tasks match. Change the person or clear the search.</p></div>';
+    container.innerHTML = '<div class="empty-state"><p>No tasks match. Change the person or section, or clear the search.</p></div>';
     return;
   }
   if (view === 'list') drawList(page, container, shown, subtasksOf);
@@ -371,9 +393,48 @@ async function moveTask(page, event) {
 
 const STATUS_ORDER = Object.keys(TASK_STATUSES);
 
+// Grouped by section, in the project's section order. Tasks with no section
+// come first. Within a section: by status, then board order. Tasks can be
+// dragged from one section to another.
 function drawList(page, container, main, subtasksOf) {
   const sorted = [...main].sort((a, b) =>
     STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) || byPosition(a, b));
+  const { sections } = page;
+  const filtering = Boolean(page.m.q.trim() || page.m.person || page.m.section);
+  const edit = canEditWork();
+  const known = new Set(sections.map(s => s.id));
+  const inGroup = id => sorted.filter(t => (known.has(t.section_id) ? t.section_id : '') === id);
+  const groups = [
+    { id: '', name: 'No section', tasks: inGroup('') },
+    ...sections.map(s => ({ id: s.id, name: s.name, tasks: inGroup(s.id) })),
+  ].filter(g => (g.id ? !filtering || g.tasks.length : g.tasks.length || !sections.length));
+
+  const row = task => {
+    const assignee = personById(task.assignee_id);
+    return `
+      <tr data-id="${esc(task.id)}" class="clickable ${task.status === 'done' ? 'is-done' : ''}">
+        <td class="tick-col"><input type="checkbox" data-done ${task.status === 'done' ? 'checked' : ''} aria-label="Done"></td>
+        <td><span class="task-title">${esc(task.title)}</span> ${subtaskCount(subtasksOf(task.id))} ${activityCounts(page, task.id)}</td>
+        <td>${assignee ? `<span class="person">${avatar(assignee, 24)}${esc(assignee.name)}</span>` : `<span class="person">${assigneeBadge(task)}<span class="muted">Unassigned</span></span>`}</td>
+        <td class="nowrap">${dueLabel(task) || '<span class="muted">—</span>'}</td>
+        <td><select data-status aria-label="Status">${options(TASK_STATUSES, task.status)}</select></td>
+      </tr>`;
+  };
+  const head = (g, i) => (sections.length ? `
+    <tr class="task-section-row" data-section-head>
+      <th colspan="5" scope="colgroup">
+        <div class="task-section-head">
+          <h3>${esc(g.name)}</h3><span class="muted">${g.tasks.length}</span>
+          <span class="spacer"></span>
+          ${edit && g.id ? `
+            <button class="icon-btn" type="button" data-section-up ${i === firstSection ? 'disabled' : ''} aria-label="Move ${esc(g.name)} up" title="Move up">↑</button>
+            <button class="icon-btn" type="button" data-section-down ${i === groups.length - 1 ? 'disabled' : ''} aria-label="Move ${esc(g.name)} down" title="Move down">↓</button>
+            <button class="btn btn-ghost btn-small" type="button" data-section-rename>Rename</button>
+            <button class="btn btn-ghost btn-small" type="button" data-section-delete>Delete</button>` : ''}
+        </div>
+      </th>
+    </tr>` : '');
+  const firstSection = groups.findIndex(g => g.id);
 
   container.innerHTML = `
     <div class="table-wrap">
@@ -381,23 +442,66 @@ function drawList(page, container, main, subtasksOf) {
         <thead>
           <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th>Task</th><th>Assignee</th><th>Due</th><th>Status</th></tr>
         </thead>
-        <tbody>
-          ${sorted.map(task => {
-            const assignee = personById(task.assignee_id);
-            return `
-              <tr data-id="${esc(task.id)}" class="clickable ${task.status === 'done' ? 'is-done' : ''}">
-                <td class="tick-col"><input type="checkbox" data-done ${task.status === 'done' ? 'checked' : ''} aria-label="Done"></td>
-                <td><span class="task-title">${esc(task.title)}</span> ${subtaskCount(subtasksOf(task.id))} ${activityCounts(page, task.id)}</td>
-                <td>${assignee ? `<span class="person">${avatar(assignee, 24)}${esc(assignee.name)}</span>` : `<span class="person">${assigneeBadge(task)}<span class="muted">Unassigned</span></span>`}</td>
-                <td class="nowrap">${dueLabel(task) || '<span class="muted">—</span>'}</td>
-                <td><select data-status aria-label="Status">${options(TASK_STATUSES, task.status)}</select></td>
-              </tr>`;
-          }).join('')}
-        </tbody>
+        ${groups.map((g, i) => `
+          <tbody data-group="${esc(g.id)}">
+            ${head(g, i)}
+            ${g.tasks.map(row).join('')}
+            ${!g.tasks.length ? `<tr class="task-section-empty" data-placeholder><td colspan="5" class="muted small">${sections.length ? 'No tasks in this section yet.' : 'No tasks yet.'}${edit && sections.length ? ' Drag one here or add one below.' : ''}</td></tr>` : ''}
+            ${edit && sections.length && !page.campaign.archived_at ? `
+              <tr class="task-section-add" data-placeholder><td colspan="5">
+                <form class="column-add" data-section-add="${esc(g.id)}">
+                  <button class="btn btn-ghost btn-small column-add-open" type="button">+ Add task</button>
+                  <input placeholder="Task title, then Enter" aria-label="New task in ${esc(g.name)}" maxlength="300" hidden>
+                </form>
+              </td></tr>` : ''}
+          </tbody>`).join('')}
       </table>
-    </div>`;
+    </div>
+    ${edit && !filtering ? '<button class="btn btn-small task-section-new" type="button" data-section-new>+ Add section</button>' : ''}`;
 
-  container.querySelectorAll('tbody tr').forEach(row => {
+  container.querySelectorAll('tbody[data-group]').forEach(body => {
+    const id = body.dataset.group;
+    const section = sections.find(s => s.id === id);
+    body.querySelector('[data-section-up]')?.addEventListener('click', () => moveSection(page, section, -1));
+    body.querySelector('[data-section-down]')?.addEventListener('click', () => moveSection(page, section, 1));
+    body.querySelector('[data-section-rename]')?.addEventListener('click', () => openSectionForm(page, section));
+    body.querySelector('[data-section-delete]')?.addEventListener('click', () => removeSection(page, section));
+    const form = body.querySelector('[data-section-add]');
+    if (form) {
+      const open = form.querySelector('.column-add-open');
+      const input = form.querySelector('input');
+      const close = () => { input.hidden = true; open.hidden = false; input.value = ''; };
+      open.addEventListener('click', () => { open.hidden = true; input.hidden = false; input.focus(); });
+      input.addEventListener('keydown', event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } });
+      input.addEventListener('blur', () => { if (!input.value.trim()) close(); });
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const title = input.value.trim();
+        if (!title) return;
+        input.value = '';
+        await addTask(page, title, 'todo', id || null);
+        container.querySelector(`[data-section-add="${CSS.escape(id)}"] .column-add-open`)?.click();
+      });
+    }
+    if (edit && sections.length) {
+      Sortable.create(body, {
+        group: 'sections',
+        sort: false,
+        animation: 150,
+        delayOnTouchOnly: true,
+        delay: 150,
+        draggable: 'tr[data-id]',
+        filter: 'input, select',
+        preventOnFilter: false,
+        ghostClass: 'drag-ghost',
+        onStart: () => { page.dragging = true; },
+        onEnd: event => moveToSection(page, event),
+      });
+    }
+  });
+  container.querySelector('[data-section-new]')?.addEventListener('click', () => openSectionForm(page, null));
+
+  container.querySelectorAll('tbody tr[data-id]').forEach(row => {
     const task = page.tasks.find(t => t.id === row.dataset.id);
     row.addEventListener('click', event => {
       if (!event.target.closest('input, select')) openTaskPanel(task.id);
@@ -421,16 +525,123 @@ async function setStatus(page, task, status) {
   }
 }
 
+// Sections --------------------------------------------------------------------
+
+// The section filter, shown once the project has sections
+function drawSectionFilter(page) {
+  const select = page.el.querySelector('[data-section-filter]');
+  if (page.m.section && page.m.section !== 'none' && !page.sections.some(s => s.id === page.m.section)) page.m.section = '';
+  select.hidden = !page.sections.length;
+  select.innerHTML = `<option value="">All sections</option><option value="none">No section</option>
+    ${options(Object.fromEntries(page.sections.map(s => [s.id, s.name])), page.m.section)}`;
+  select.value = page.m.section;
+}
+
+// New tasks go into the section being shown, if one is picked
+function shownSectionId(page) {
+  return page.m.section && page.m.section !== 'none' ? page.m.section : null;
+}
+
+function openSectionForm(page, section) {
+  formDialog({
+    title: section ? 'Rename section' : 'Add section',
+    submitLabel: section ? 'Save' : 'Add section',
+    body: `
+      <label class="field"><span>Name</span>
+        <input name="name" required maxlength="120" value="${esc(section?.name || '')}" placeholder="For example: Pre-onboarding"></label>
+      ${section ? '' : '<p class="muted small form-note">It goes at the bottom of the list. Use the arrows to move it.</p>'}`,
+    onSubmit: async form => {
+      const name = form.elements.name.value.trim();
+      if (!name) return 'Give the section a name.';
+      try {
+        if (section) {
+          await updateSection(section.id, { name });
+          section.name = name;
+        } else {
+          const last = Math.max(0, ...page.sections.map(s => s.position));
+          page.sections.push(await createSection({ campaign_id: page.campaign.id, name, position: last + 1000 }));
+        }
+      } catch (error) {
+        return errorMessage(error);
+      }
+      toast(section ? 'Section renamed' : `${name} added`);
+      drawTasks(page);
+    },
+  });
+}
+
+// Swap a section with the one above or below it
+async function moveSection(page, section, step) {
+  const ordered = [...page.sections].sort(byPosition);
+  const i = ordered.indexOf(section);
+  if (!ordered[i + step]) return;
+  [ordered[i], ordered[i + step]] = [ordered[i + step], ordered[i]];
+  // Number them again 1000, 2000…, saving only the ones that changed
+  const changed = ordered.filter((s, n) => s.position !== (n + 1) * 1000);
+  ordered.forEach((s, n) => { s.position = (n + 1) * 1000; });
+  page.sections = ordered;
+  drawTasks(page);
+  try {
+    await Promise.all(changed.map(s => updateSection(s.id, { position: s.position })));
+  } catch (error) {
+    toast(errorMessage(error), 'error');
+    page.sections = await loadSections(page.campaign.id).catch(() => page.sections);
+    drawTasks(page);
+  }
+}
+
+async function removeSection(page, section) {
+  const count = page.tasks.filter(t => !t.parent_id && t.section_id === section.id).length;
+  const ok = await confirmDialog({
+    title: `Delete “${section.name}”?`,
+    message: count
+      ? `Its ${count} task${count === 1 ? '' : 's'} stay in the project, under No section.`
+      : 'It has no tasks, so nothing else changes.',
+    confirmLabel: 'Delete section',
+    danger: true,
+  });
+  if (!ok) return;
+  try {
+    await deleteSection(section.id);
+  } catch (error) {
+    toast(errorMessage(error), 'error');
+    return;
+  }
+  page.sections = page.sections.filter(s => s.id !== section.id);
+  page.tasks.forEach(t => { if (t.section_id === section.id) t.section_id = null; });
+  toast('Section deleted');
+  drawTasks(page);
+}
+
+// A task dragged into another section in the list
+async function moveToSection(page, event) {
+  page.dragging = false;
+  if (event.from === event.to) return;
+  const task = page.tasks.find(t => t.id === event.item.dataset.id);
+  const sectionId = event.to.dataset.group || null;
+  const before = task.section_id;
+  task.section_id = sectionId;
+  setTimeout(() => drawTasks(page), 0);
+  try {
+    await updateTask(task.id, { section_id: sectionId });
+  } catch (error) {
+    task.section_id = before;
+    drawTasks(page);
+    toast(errorMessage(error), 'error');
+  }
+}
+
 // Adding tasks ----------------------------------------------------------------
 
 // New tasks go to the bottom of their column, with the quick-add
 // assignee and due date
-async function addTask(page, title, status) {
+async function addTask(page, title, status, sectionId = shownSectionId(page)) {
   const column = page.tasks.filter(t => !t.parent_id && t.status === status);
   const last = Math.max(0, ...column.map(t => t.position));
   try {
     const task = await createTask({
       campaign_id: page.campaign.id,
+      section_id: sectionId,
       title,
       status,
       position: last + 1000,

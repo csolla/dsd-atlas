@@ -4,6 +4,7 @@ import { supabase } from './supabase.js';
 // as a window event, which pages listen to.
 const EVENTS = {
   tasks: 'tasks-changed',
+  sections: 'sections-changed',
   time_entries: 'time-changed',
   timers: 'timer-changed',
   comments: 'comments-changed',

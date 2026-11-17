@@ -106,3 +106,32 @@ export async function deleteTask(id) {
   if (error) throw error;
   announceTaskChange();
 }
+
+// Sections: named groups of tasks inside a project, in their own order ---------
+
+export async function loadSections(campaignId) {
+  const { data, error } = await supabase.from('sections').select('*').eq('campaign_id', campaignId);
+  if (error) throw error;
+  return data.sort(byPosition);
+}
+
+export async function createSection(values) {
+  const { data, error } = await supabase.from('sections').insert(values).select().single();
+  if (error) throw error;
+  announce('sections-changed');
+  return data;
+}
+
+export async function updateSection(id, values) {
+  const { error } = await supabase.from('sections').update(values).eq('id', id);
+  if (error) throw error;
+  announce('sections-changed');
+}
+
+// Its tasks stay in the project, with no section
+export async function deleteSection(id) {
+  const { error } = await supabase.from('sections').delete().eq('id', id);
+  if (error) throw error;
+  announce('sections-changed');
+  announceTaskChange();
+}
