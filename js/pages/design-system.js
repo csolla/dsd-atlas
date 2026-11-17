@@ -109,7 +109,17 @@ export function renderDesignSystem(el) {
     ${section('search', 'Search results', 'The Search page lists matches grouped by kind; the words searched for are highlighted.', [
       'Each result is one link (<code>.search-hit</code>): a title, a muted meta line and, when the match is in longer text, a short snippet.',
       'Matches use <code>&lt;mark&gt;</code>: a soft yellow fill plus an underline and bolder text, so the highlight never relies on colour alone.',
+      'While typing in the top bar, a suggestion list (<code>.search-suggest</code>) shows matching projects and tasks under small group labels, ending with "Search everything". The picked row gets a fill and an accent bar.',
     ], `
+      <div class="ds-gap" style="position: relative; min-height: 210px;">
+        <ul class="search-suggest" role="listbox" aria-label="Example suggestions" style="left: 0; right: auto;">
+          <li class="suggest-group" role="presentation">Projects</li>
+          <li role="option" aria-selected="true"><span class="suggest-title"><mark>Onb</mark>oarding template</span></li>
+          <li class="suggest-group" role="presentation">Tasks</li>
+          <li role="option" aria-selected="false"><span class="suggest-title">Send <mark>onb</mark>oarding pack</span><span class="suggest-meta">Onboarding template</span></li>
+          <li role="option" aria-selected="false"><span class="suggest-all">Search everything for “onb”</span></li>
+        </ul>
+      </div>
       <ul class="search-hits">
         <li><a class="search-hit" href="#/design-system">
           <span class="search-hit-title">DSD Clinics <mark>Onboard</mark>ing</span>

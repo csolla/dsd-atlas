@@ -75,3 +75,25 @@ export function snippet(text, q, around = 70) {
   const end = Math.min(value.length, at + q.trim().length + around);
   return `${start > 0 ? '…' : ''}${value.slice(start, end)}${end < value.length ? '…' : ''}`;
 }
+
+// A few quick matches by name for the top bar's suggestions: projects and
+// tasks whose name contains the words, the ones that start with them first
+export async function suggest(q, { projects = 4, tasks = 5 } = {}) {
+  const words = q.trim();
+  if (words.length < MIN_LENGTH) return { projects: [], tasks: [] };
+  const like = containsPattern(words);
+  const [projectRows, taskRows] = await Promise.all([
+    rows(supabase.from('campaigns').select('id, name, private, archived_at').ilike('name', like)
+      .order('archived_at', { ascending: false, nullsFirst: true }).order('created_at', { ascending: false }).limit(20)),
+    rows(supabase.from('tasks').select('id, title, status, parent_id, campaign_id, campaign:campaigns(id, name, private, archived_at)')
+      .ilike('title', like).order('updated_at', { ascending: false }).limit(20)),
+  ]);
+  const lower = words.toLowerCase();
+  // Starts with the words first, then live before archived, then as returned
+  const rank = (name, archived) => (String(name).toLowerCase().startsWith(lower) ? 0 : 2) + (archived ? 1 : 0);
+  const byRank = (key, archivedOf) => (a, b) => rank(a[key], archivedOf(a)) - rank(b[key], archivedOf(b));
+  return {
+    projects: [...projectRows].sort(byRank('name', p => p.archived_at)).slice(0, projects),
+    tasks: taskRows.filter(t => t.campaign).sort(byRank('title', t => t.campaign.archived_at)).slice(0, tasks),
+  };
+}

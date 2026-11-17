@@ -119,7 +119,8 @@ const SECTIONS = [
     title: 'Searching everything',
     html: `
       <ul>
-        <li>Type in the <strong>Search</strong> box at the top and press Enter (on a phone, tap the magnifying glass). Press <strong>/</strong> anywhere to jump to it.</li>
+        <li>Type in the <strong>Search</strong> box at the top (on a phone, tap the magnifying glass). Press <strong>/</strong> anywhere to jump to it.</li>
+        <li>After two letters, a list suggests matching projects and tasks. Click one, or use ↑ ↓ and Enter, to open it. <strong>Search everything</strong> at the bottom, or Enter with nothing picked, opens the full results. Esc closes the list.</li>
         <li>It finds projects (by name or description), sections, tasks and subtasks (by title or description) and comments, across every project you can see, including archived ones. The words you typed are highlighted.</li>
         <li>On the Search page, results update as you type. Click a result to open it; a task opens in its project with its side panel open.</li>
         <li>Private projects only show up for the people who can see them.</li>

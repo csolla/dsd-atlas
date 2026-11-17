@@ -16,6 +16,7 @@ import { renderProfile } from './pages/profile.js';
 import { renderDashboards } from './pages/dashboards.js';
 import { renderHelp } from './pages/help.js';
 import { renderSearch, searchHref } from './pages/search.js';
+import { mountSearchSuggestions } from './search-suggest.js';
 
 const ALL = ['admin', 'member', 'director'];
 const WORK = ['admin', 'member'];
@@ -183,6 +184,7 @@ function renderShell() {
 
   // Search: Enter opens the Search page with the words
   const search = app.querySelector('[data-topbar-search]');
+  if (search) mountSearchSuggestions(search);
   search?.addEventListener('submit', event => {
     event.preventDefault();
     const q = search.elements.q.value.trim();
