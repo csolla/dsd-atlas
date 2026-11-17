@@ -106,6 +106,20 @@ export function renderDesignSystem(el) {
         <p class="form-success">Success message: confirm what happened.</p>
       </div>`)}
 
+    ${section('search', 'Search results', 'The Search page lists matches grouped by kind; the words searched for are highlighted.', [
+      'Each result is one link (<code>.search-hit</code>): a title, a muted meta line and, when the match is in longer text, a short snippet.',
+      'Matches use <code>&lt;mark&gt;</code>: a soft yellow fill plus an underline and bolder text, so the highlight never relies on colour alone.',
+    ], `
+      <ul class="search-hits">
+        <li><a class="search-hit" href="#/design-system">
+          <span class="search-hit-title">DSD Clinics <mark>Onboard</mark>ing</span>
+          <span class="search-hit-meta"><span class="tag tag-other">Delight</span> <span class="status status-in_progress">In progress</span></span>
+          <span class="search-hit-snippet">Full <mark>onboard</mark>ing for the clinic, from contract to first patient.</span></a></li>
+        <li><a class="search-hit" href="#/design-system">
+          <span class="search-hit-title">Send <mark>onboard</mark>ing pack</span>
+          <span class="search-hit-meta"><strong>DSD Clinics Onboarding</strong> · To do · Ana</span></a></li>
+      </ul>`)}
+
     ${section('task-sections', 'Task sections', 'Group a project\'s tasks into phases in the List view.', [
       'A header row per section (<code>.task-section-row</code>) with its name, task count and, for editors, ↑ ↓, Rename and Delete.',
       'Each section ends with its own <strong>+ Add task</strong>; an empty section says so.',

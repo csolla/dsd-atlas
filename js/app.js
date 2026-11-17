@@ -15,6 +15,7 @@ import { renderDesignSystem } from './pages/design-system.js';
 import { renderProfile } from './pages/profile.js';
 import { renderDashboards } from './pages/dashboards.js';
 import { renderHelp } from './pages/help.js';
+import { renderSearch, searchHref } from './pages/search.js';
 
 const ALL = ['admin', 'member', 'director'];
 const WORK = ['admin', 'member'];
@@ -38,6 +39,7 @@ const ROUTES = [
   { path: /^\/settings\/design-system$/, roles: ['admin'], redirect: '/design-system' },
   { path: /^\/profile$/, roles: ALL, nav: null, render: renderProfile },
   { path: /^\/help$/, roles: ALL, nav: null, render: renderHelp },
+  { path: /^\/search(\?.*)?$/, roles: WORK, nav: null, render: el => renderSearch(el) },
 ];
 
 const NAV = [
@@ -137,6 +139,11 @@ function renderShell() {
         ${NAV.filter(item => item.roles.includes(role)).map(item =>
           `<a class="nav-link" data-nav="${item.key}" href="${item.href}">${esc(item.label)}</a>`).join('')}
       </nav>
+      ${role !== 'director' ? `
+        <form class="topbar-search" role="search" data-topbar-search>
+          <input type="search" name="q" placeholder="Search" aria-label="Search everything" autocomplete="off" maxlength="200" title="Search everything (press / )">
+        </form>
+        <a class="icon-btn topbar-search-link" href="#/search" aria-label="Search everything" title="Search">${SEARCH_ICON}</a>` : ''}
       <div class="timer-slot"></div>
       <div class="bell-slot"></div>
       <div class="user-menu">
@@ -174,6 +181,17 @@ function renderShell() {
   });
   menu.querySelector('[data-sign-out]').addEventListener('click', () => supabase.auth.signOut());
 
+  // Search: Enter opens the Search page with the words
+  const search = app.querySelector('[data-topbar-search]');
+  search?.addEventListener('submit', event => {
+    event.preventDefault();
+    const q = search.elements.q.value.trim();
+    if (!q) return;
+    search.elements.q.value = '';
+    search.elements.q.blur();
+    window.location.hash = searchHref(q);
+  });
+
   // Light, Dark, or Auto (follow the computer); remembered on this browser
   const showTheme = () => {
     const current = document.documentElement.dataset.theme || 'auto';
@@ -192,6 +210,20 @@ function renderShell() {
   }));
   showTheme();
 }
+
+const SEARCH_ICON = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m10.5 10.5 3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+// Press / anywhere (outside a text box) to jump to search
+document.addEventListener('keydown', event => {
+  if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.target.closest('input, textarea, select, [contenteditable="true"]') || document.querySelector('dialog[open]')) return;
+  const box = window.location.hash.startsWith('#/search')
+    ? document.querySelector('.search-page-form input')
+    : document.querySelector('[data-topbar-search] input');
+  if (!box || !box.offsetParent) return;
+  event.preventDefault();
+  box.focus();
+});
 
 // The Profile page fires this after a name or photo change
 window.addEventListener('me-updated', () => {

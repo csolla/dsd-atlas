@@ -828,6 +828,23 @@ body.presenting .budget-figures strong { font-size: 26px; }
 /* Notifications bell ------------------------------------------------------------ */
 
 .bell-slot { flex-shrink: 0; }
+
+/* Search: a box in the top bar (an icon on phones) and the Search page */
+.topbar-search { flex: 0 1 220px; min-width: 120px; }
+.topbar-search input { width: 100%; min-height: 34px; padding: 5px 12px; border-radius: 999px; background: var(--surface-2); }
+.topbar-search-link { display: none; color: var(--muted); }
+.search-page-form { display: flex; gap: 8px; margin-bottom: 18px; max-width: 640px; }
+.search-page-form input { flex: 1; min-width: 0; }
+.search-group { margin-bottom: 22px; }
+.search-group h2 { font-size: 16px; margin: 0 0 8px; }
+.search-hits { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.search-hits li + li { border-top: 1px solid var(--border); }
+.search-hit { display: grid; gap: 3px; padding: 10px 14px; color: var(--text-body); text-decoration: none; }
+.search-hit:hover, .search-hit:focus-visible { background: var(--surface-2); }
+.search-hit-title { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+.search-hit-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--muted); font-size: 13px; }
+.search-hit-snippet { font-size: 14px; overflow-wrap: anywhere; }
+mark { background: var(--signal-soft); color: var(--text); font-weight: 650; border-radius: 3px; padding: 0 1px; box-shadow: inset 0 -2px 0 var(--signal); }
 .bell { position: relative; }
 .bell-button {
   position: relative; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%;
@@ -1116,6 +1133,8 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
 @media (max-width: 720px) {
   .topbar { gap: 10px; padding: 0 16px; }
   .brand-name { display: none; }
+  .topbar-search { display: none; }
+  .topbar-search-link { display: inline-flex; }
   .page { padding: 20px 16px 48px; }
   .field-row { flex-direction: column; gap: 0; }
   .page-header, .campaign-title { flex-direction: column; }
