@@ -26,7 +26,7 @@ function unique(lists) {
   return lists.flat().filter(row => !seen.has(row.id) && seen.add(row.id));
 }
 
-const PROJECT = 'id, name, status, private, archived_at, budget, department_id, for_department_id';
+const PROJECT = 'id, name, status, private, archived_at, is_template, budget, department_id, for_department_id';
 const TASK = `id, title, description, status, due_date, assignee_id, parent_id, campaign_id,
   campaign:campaigns(${PROJECT}), parent:parent_id(id, title)`;
 
@@ -96,7 +96,7 @@ export async function tasksAssignedTo(personId, { includeDone = false } = {}) {
   let query = supabase.from('tasks').select(TASK).eq('assignee_id', personId);
   if (!includeDone) query = query.neq('status', 'done');
   const data = await rows(query.order('due_date', { ascending: true, nullsFirst: false }).limit(500));
-  return data.filter(t => t.campaign && !t.campaign.archived_at);
+  return data.filter(t => t.campaign && !t.campaign.archived_at && !t.campaign.is_template);
 }
 
 // A few quick matches by name for the top bar's suggestions: projects and
@@ -106,9 +106,9 @@ export async function suggest(q, { projects = 4, tasks = 5 } = {}) {
   if (words.length < MIN_LENGTH) return { projects: [], tasks: [] };
   const like = containsPattern(words);
   const [projectRows, taskRows] = await Promise.all([
-    rows(supabase.from('campaigns').select('id, name, private, archived_at').ilike('name', like)
+    rows(supabase.from('campaigns').select('id, name, private, archived_at, is_template').ilike('name', like)
       .order('archived_at', { ascending: false, nullsFirst: true }).order('created_at', { ascending: false }).limit(20)),
-    rows(supabase.from('tasks').select('id, title, status, parent_id, campaign_id, campaign:campaigns(id, name, private, archived_at)')
+    rows(supabase.from('tasks').select('id, title, status, parent_id, campaign_id, campaign:campaigns(id, name, private, archived_at, is_template)')
       .ilike('title', like).order('updated_at', { ascending: false }).limit(20)),
   ]);
   const lower = words.toLowerCase();

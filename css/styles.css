@@ -603,6 +603,11 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .access-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13.5px; }
 .access-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .access-label { font-weight: 600; color: var(--muted); margin-right: 2px; }
+.page-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.template-flag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
+.template-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 12px 0 0; padding: 10px 14px; border-radius: var(--radius);
+  background: var(--accent-soft); color: var(--text); font-size: 14px; }
+.template-note p { margin: 0; flex: 1 1 280px; }
 .private-flag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .archived-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--radius); background: var(--surface-2); color: var(--text); font-size: 14px; }
 .subtask-mark { color: var(--muted); font-weight: 400; margin-right: 6px; }

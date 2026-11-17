@@ -34,7 +34,7 @@ export function mountSearchSuggestions(form) {
   };
 
   const draw = (found, q) => {
-    const flags = p => `${p.private ? ' <span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}${p.archived_at ? ' <span class="private-flag">Archived</span>' : ''}`;
+    const flags = p => `${p.private ? ' <span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}${p.archived_at ? ' <span class="private-flag">Archived</span>' : ''}${p.is_template ? ' <span class="template-flag">Template</span>' : ''}`;
     items = [
       ...found.people.map(p => ({
         group: 'People',

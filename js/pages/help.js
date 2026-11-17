@@ -113,6 +113,13 @@ const SECTIONS = [
         <li><strong>Private projects</strong> (for Job Scorecards, finance or HR): in the project's form, under <strong>Who can see it</strong>, choose <strong>Only the departments and people I choose</strong>, then add them from the Departments and People dropdowns (× removes one). The project page lists who can see it. Its owner and Admins always see it; nobody else sees it, its tasks, comments or files. Tasks can only be assigned to, and @mentions only reach, people who can see it. Only the owner or an Admin can change who sees it. Its hours still count in Dashboards, without its name.</li>
         <li><strong>Archive</strong> (next to Edit on a project) moves a finished project to the <strong>Archived</strong> tab and takes its tasks off My tasks. Its hours stay in Dashboards, but no new time can be logged on it. <strong>Unarchive</strong> brings it back.</li>
         <li><strong>Anything with hours logged can't be deleted.</strong> Set it to Done or On hold instead.</li>
+      </ul>
+      <h3>Templates</h3>
+      <ul>
+        <li>A <strong>template</strong> is a ready-made project to copy, such as a clinic onboarding or a monthly payments control. Find them under <strong>Projects → Templates</strong>.</li>
+        <li>To use one: <strong>New project</strong> → <strong>Start from</strong> → pick the template, or open the template and click <strong>Use this template</strong>. Give the project its name, start date and owner. Its sections, tasks, subtasks and fields are copied; task due dates move with your start date (a task due on day 10 of the template is due on day 10 of yours), and every task starts as To do. Who can see it comes from the template.</li>
+        <li>To make one: <strong>New template</strong> on the Projects page, or <strong>Save as template</strong> on any project (it copies the project; the project itself doesn't change).</li>
+        <li>Templates never appear in My tasks or Dashboards, send no notifications, and can't have time logged on them. Edit a template like any project; projects already made from it don't change.</li>
       </ul>`,
   },
   {

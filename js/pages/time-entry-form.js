@@ -8,7 +8,7 @@ const INTERNAL = 'internal';
 const NEEDS_TASK = 'Choose a task. Project time always goes on a task; if none fits, add one on the project page first.';
 
 async function loadCampaigns() {
-  const { data, error } = await supabase.from('campaigns').select('id, name, budget, department_id, for_department_id, status, archived_at').order('name');
+  const { data, error } = await supabase.from('campaigns').select('id, name, budget, department_id, for_department_id, status, archived_at, is_template').eq('is_template', false).order('name');
   if (error) throw error;
   return data;
 }

@@ -76,15 +76,15 @@ async function load(page) {
   const { data, error } = await supabase
     .from('tasks')
     .select(`id, title, status, due_date, parent_id, position, campaign_id, updated_at,
-      campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at),
+      campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, is_template),
       parent:parent_id(id, title, due_date)`)
     .eq('assignee_id', state.me.id);
   if (error) {
     page.el.querySelector('[data-list]').innerHTML = `<p class="form-error">${esc(errorMessage(error))}</p>`;
     return;
   }
-  // Tasks of archived projects drop out of My tasks
-  page.items = data.filter(item => !item.campaign?.archived_at)
+  // Tasks of archived projects and templates drop out of My tasks
+  page.items = data.filter(item => !item.campaign?.archived_at && !item.campaign?.is_template)
     .map(item => ({ ...item, due: effectiveDue(item, item.parent) }));
   draw(page);
 }

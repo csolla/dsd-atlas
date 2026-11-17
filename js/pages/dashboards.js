@@ -141,7 +141,7 @@ async function loadData() {
     // Marketing's campaigns only, whoever they're for
     query(supabase.from('campaigns')
       .select('id, name, budget, department_id, for_department_id, status, start_date, end_date, planned_hours')
-      .eq('department_id', departmentByKey('marketing')?.id).order('name')),
+      .eq('department_id', departmentByKey('marketing')?.id).eq('is_template', false).order('name')),
     query(supabase.from('campaign_hours').select('*')),
     loadHolidays(windowFrom, period.to),
     loadTimeOff({ from: windowFrom, to: period.to }),

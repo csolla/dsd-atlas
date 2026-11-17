@@ -289,14 +289,14 @@ async function drawSuggestions(page) {
   }
   const loadId = page.loadId;
   const { data, error } = await supabase.from('tasks')
-    .select('id, title, status, due_date, campaign_id, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at), parent:parent_id(title)')
+    .select('id, title, status, due_date, campaign_id, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, is_template), parent:parent_id(title)')
     .eq('assignee_id', page.personId).neq('status', 'done');
   if (error || loadId !== page.loadId) return;
   const end = addDays(page.start, 6);
   const present = new Set(buildRows(page).map(r => r.key));
   const picks = data
     .filter(t => t.status === 'in_progress' || (t.due_date && t.due_date >= page.start && t.due_date <= end))
-    .filter(t => !t.campaign?.archived_at && !present.has(`${t.campaign_id}|${t.id}`))
+    .filter(t => !t.campaign?.archived_at && !t.campaign?.is_template && !present.has(`${t.campaign_id}|${t.id}`))
     .slice(0, 6);
   if (!picks.length) {
     box.innerHTML = '';

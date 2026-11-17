@@ -84,7 +84,7 @@ window.addEventListener('hashchange', closeTaskPanel);
 
 async function loadTask(taskId) {
   const { data: task, error } = await supabase
-    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, private, owner_id, created_by)').eq('id', taskId).maybeSingle();
+    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, private, owner_id, created_by, is_template)').eq('id', taskId).maybeSingle();
   if (error) throw error;
   if (!task) return null;
   const { data: subtasks, error: subError } = await supabase.from('tasks').select('*').eq('parent_id', taskId);
@@ -136,7 +136,7 @@ function render() {
       <section class="custom-fields" data-custom-fields hidden></section>
       <label class="field"><span>Description</span>
         <textarea data-field="description" rows="5" placeholder="Add more detail"></textarea></label>
-      <section class="time-box">
+      <section class="time-box" ${task.campaign.is_template ? 'hidden' : ''}>
         <h3>Time</h3>
         <div class="time-box-row">
           <span data-hours class="muted">Loading hours…</span>

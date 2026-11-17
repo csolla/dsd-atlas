@@ -80,9 +80,14 @@ export async function renderCampaign(el, id, openTask = null) {
         <div class="actions">
           <button class="btn btn-ghost btn-small" type="button" data-toggle-details aria-expanded="${page.m.details}">Details</button>
           ${canEditWork() ? `<button class="btn btn-small" type="button" data-edit>Edit</button>
+            ${campaign.is_template ? '' : '<button class="btn btn-small btn-ghost" type="button" data-save-template>Save as template</button>'}
             <button class="btn btn-small btn-ghost" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>` : ''}
         </div>
       </div>
+      ${campaign.is_template ? `<div class="template-note" role="status">
+        <p><strong>Template.</strong> Set up its sections, tasks, subtasks and fields here. Nobody works in it: projects made from it copy everything, with task dates moved to the new start date.</p>
+        ${canEditWork() ? '<button class="btn btn-primary btn-small" type="button" data-use-template>Use this template</button>' : ''}
+      </div>` : ''}
       ${campaign.private ? accessLine(access) : ''}
       ${campaign.archived_at ? `<p class="archived-note" role="status"><strong>Archived</strong> on ${esc(fmtDate(campaign.archived_at.slice(0, 10)))}${personById(campaign.archived_by) ? ` by ${esc(personById(campaign.archived_by).name)}` : ''}.
         Kept for reference: its hours still count in Dashboards, but no new time can be logged on it.</p>` : ''}
@@ -136,6 +141,9 @@ export async function renderCampaign(el, id, openTask = null) {
     openCampaignForm(campaign, () => renderCampaign(el, id)));
   el.querySelector('[data-delete]')?.addEventListener('click', () => deleteCampaign(page));
   el.querySelector('[data-archive]')?.addEventListener('click', () => toggleArchived(page, () => renderCampaign(el, id)));
+  el.querySelector('[data-use-template]')?.addEventListener('click', () =>
+    openCampaignForm(null, saved => { window.location.hash = `/campaigns/${saved.id}`; }, { templateId: campaign.id }));
+  el.querySelector('[data-save-template]')?.addEventListener('click', () => saveAsTemplate(campaign));
   const quick = el.querySelector('[data-quick-add]');
   if (quick) {
     quick.addEventListener('submit', event => quickAdd(event, page));
@@ -864,6 +872,29 @@ async function toggleArchived(page, onDone) {
   }
   toast(archiving ? 'Project archived' : 'Project unarchived');
   onDone();
+}
+
+// A copy of this project as a new template: sections, tasks, subtasks and
+// fields (with their values), every task back to To do
+function saveAsTemplate(campaign) {
+  formDialog({
+    title: 'Save as template',
+    submitLabel: 'Create template',
+    body: `
+      <p class="muted small">A copy of this project becomes a template under Projects → Templates. Its sections, tasks, subtasks and fields are copied; every task starts as To do. Comments, files and hours aren't copied, and this project doesn't change.</p>
+      <label class="field"><span>Template name</span>
+        <input name="name" required maxlength="200" value="${esc(`${campaign.name} template`)}"></label>`,
+    onSubmit: async form => {
+      const name = form.elements.name.value.trim();
+      if (!name) return 'Give the template a name.';
+      const { data: newId, error } = await supabase.rpc('copy_project', {
+        p_source: campaign.id, p_values: { name, status: 'planned' }, p_as_template: true,
+      });
+      if (error) return errorMessage(error);
+      toast('Template created');
+      window.location.hash = `/campaigns/${newId}`;
+    },
+  });
 }
 
 async function deleteCampaign(page) {

@@ -21,6 +21,7 @@ const VIEWS = {
   closed: { label: 'Done & on hold', statuses: ['done', 'on_hold'] },
   all: { label: 'All', statuses: null },
   archived: { label: 'Archived', statuses: null, archived: true },
+  templates: { label: 'Templates', statuses: null, template: true },
 };
 
 // Main tasks (not subtasks) of every campaign, for the "% of tasks done" column
@@ -37,7 +38,9 @@ export async function renderCampaigns(el) {
   el.innerHTML = `
     <div class="page-header">
       <h1>Projects</h1>
-      ${canEditWork() ? '<button class="btn btn-primary" type="button" data-new>New project</button>' : ''}
+      ${canEditWork() ? `<div class="page-actions">
+        <button class="btn" type="button" data-new-template>New template</button>
+        <button class="btn btn-primary" type="button" data-new>New project</button></div>` : ''}
     </div>
     <div class="campaign-tabs">
       <nav class="tabs" aria-label="Which projects" data-views></nav>
@@ -61,6 +64,8 @@ export async function renderCampaigns(el) {
   const list = el.querySelector('[data-list]');
   el.querySelector('[data-new]')?.addEventListener('click', () =>
     openCampaignForm(null, saved => { window.location.hash = `/campaigns/${saved.id}`; }));
+  el.querySelector('[data-new-template]')?.addEventListener('click', () =>
+    openCampaignForm(null, saved => { window.location.hash = `/campaigns/${saved.id}`; }, { asTemplate: true }));
 
   const [campaignResult, progressResult, hoursResult] = await Promise.allSettled([
     supabase.from('campaigns').select('*').order('name'),
@@ -114,9 +119,11 @@ function matchesFilters(campaign) {
     && (!q || `${campaign.name} ${campaign.description || ''}`.toLowerCase().includes(q));
 }
 
-// Archived ones only show under Archived
-const inView = (campaign, view) => Boolean(campaign.archived_at) === Boolean(VIEWS[view].archived)
-  && (!VIEWS[view].statuses || VIEWS[view].statuses.includes(campaign.status));
+// Templates only show under Templates; archived projects only under Archived
+const inView = (campaign, view) => (VIEWS[view].template
+  ? campaign.is_template
+  : !campaign.is_template && Boolean(campaign.archived_at) === Boolean(VIEWS[view].archived)
+    && (!VIEWS[view].statuses || VIEWS[view].statuses.includes(campaign.status)));
 
 function drawViews(el, data, draw) {
   const filtered = data.campaigns.filter(matchesFilters);
@@ -167,6 +174,10 @@ function drawList(list, data, draw) {
       return { ...c, logged, planned, hoursPct: planned > 0 ? logged / planned * 100 : null, tasksPct: data.progress[c.id] ?? null };
     });
   if (!shown.length) {
+    if (filters.view === 'templates') {
+      list.innerHTML = `<div class="empty-state"><p>No templates match.${canEditWork() ? ' Create one with “New template”, or open a project and use “Save as template”.' : ''}</p></div>`;
+      return;
+    }
     list.innerHTML = `<div class="empty-state"><p>No ${filters.view === 'all' ? '' : `${VIEWS[filters.view].label.toLowerCase()} `}projects match.
       ${filters.view !== 'all' ? 'Try the <strong>All</strong> tab or clear the filters.' : 'Try clearing the filters.'}</p></div>`;
     return;
@@ -206,7 +217,7 @@ function drawList(list, data, draw) {
                   <a class="row-link campaign-link" href="#/campaigns/${esc(c.id)}">${esc(c.name)}</a>
                   ${unitLine(c)}
                   ${c.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
-                  ${endedFlag(c)}
+                  ${c.is_template ? '<span class="template-flag">Template</span>' : endedFlag(c)}
                 </td>
                 <td data-label="Owner">${owner ? `<span class="person">${avatar(owner, 24)}${esc(owner.name)}</span>` : '<span class="muted">—</span>'}</td>
                 <td data-label="Dates" class="nowrap">${esc(fmtCompactRange(c.start_date, c.end_date))}</td>
@@ -317,7 +328,35 @@ function setUpPicker(dialog, name, placeholder, items, startIds) {
   draw();
 }
 
-export async function openCampaignForm(campaign, onSaved) {
+// Templates people can start a project from
+async function loadTemplates() {
+  const { data, error } = await supabase.from('campaigns')
+    .select('id, name, description, department_id, for_department_id, budget, planned_hours, start_date, end_date, private')
+    .eq('is_template', true).is('archived_at', null).order('name');
+  if (error) throw error;
+  return data;
+}
+
+const addDays = (iso, days) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d + days);
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+// New project (campaign = null) or edit one. options.asTemplate makes a new
+// template; options.templateId starts a new project from that template.
+export async function openCampaignForm(campaign, onSaved, { asTemplate = false, templateId = null } = {}) {
+  const isTemplate = campaign ? Boolean(campaign.is_template) : asTemplate;
+  const templates = !campaign && !asTemplate ? await loadTemplates().catch(() => []) : [];
+  const startFrom = templates.length ? `
+      <label class="field template-pick"><span>Start from</span>
+        <select name="template_id">
+          <option value="">A blank project</option>
+          ${templates.map(t => `<option value="${esc(t.id)}" ${t.id === templateId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}
+        </select></label>
+      <p class="muted small form-note" data-template-help hidden>Its sections, tasks, subtasks and fields are copied. Task dates move with the start date you choose, and every task starts as To do.</p>` : '';
   const marketing = departmentByKey('marketing');
   const defaultDept = state.me.department_id || marketing?.id;
   const c = campaign || {
@@ -352,10 +391,13 @@ export async function openCampaignForm(campaign, onSaved) {
       </fieldset>`
     : c.private ? `<p class="muted small form-note">🔒 Private: seen by ${esc(accessSummary(before))}, its owner and Admins. Only its owner or an Admin can change this.</p>` : '';
 
+  const noun = isTemplate ? 'template' : 'project';
   const dialog = formDialog({
-    title: campaign ? 'Edit project' : 'New project',
-    submitLabel: campaign ? 'Save changes' : 'Create project',
+    title: campaign ? `Edit ${noun}` : `New ${noun}`,
+    submitLabel: campaign ? 'Save changes' : `Create ${noun}`,
     body: `
+      ${startFrom}
+      ${isTemplate ? '<p class="muted small form-note">A template is a project people copy: add its sections, tasks, subtasks and fields after creating it. Nobody works in a template, and no time is logged on it.</p>' : ''}
       <label class="field"><span>Name</span>
         <input name="name" required maxlength="200" value="${esc(c.name || '')}"></label>
       <label class="field"><span>Description</span>
@@ -367,8 +409,9 @@ export async function openCampaignForm(campaign, onSaved) {
           <select name="for_department_id" required>${forOptions(c.department_id, sharedSplit, currentFor(c))}</select></label>
       </div>
       <p class="muted small form-note" data-for-help></p>
-      <label class="field"><span>Status</span>
+      <label class="field" ${isTemplate ? 'hidden' : ''}><span>Status</span>
         <select name="status">${options(CAMPAIGN_STATUSES, c.status)}</select></label>
+      ${isTemplate ? '<p class="muted small form-note">Task due dates in the template count from its start date: a project made from it on another date has every date moved by the same number of days.</p>' : ''}
       <div class="field-row">
         <label class="field"><span>Start date</span>
           <input type="date" name="start_date" required value="${esc(c.start_date || '')}"></label>
@@ -384,7 +427,8 @@ export async function openCampaignForm(campaign, onSaved) {
         <label class="field"><span>Planned hours</span>
           <input type="number" name="planned_hours" min="0" step="0.5" value="${esc(c.planned_hours ?? 0)}"></label>
       </div>
-      ${privacy}`,
+      <div data-privacy>${privacy}</div>
+      <p class="muted small form-note" data-privacy-from-template hidden>Who can see it is copied from the template. You can change it afterwards with Edit.</p>`,
     onSubmit: async form => {
       const f = Object.fromEntries(new FormData(form));
       const values = {
@@ -410,6 +454,17 @@ export async function openCampaignForm(campaign, onSaved) {
       if (values.end_date < values.start_date) return 'The end date must be on or after the start date.';
       if (!Number.isFinite(values.planned_hours) || values.planned_hours < 0) return 'Planned hours must be 0 or more.';
 
+      // From a template: the database copies it, with these details
+      const fromTemplate = !campaign && f.template_id;
+      if (fromTemplate) {
+        delete values.private;
+        const { data: newId, error } = await supabase.rpc('copy_project', { p_source: f.template_id, p_values: values, p_as_template: false });
+        if (error) return errorMessage(error);
+        toast('Project created from the template');
+        onSaved?.({ id: newId });
+        return;
+      }
+      if (!campaign && isTemplate) values.is_template = true;
       const query = campaign
         ? supabase.from('campaigns').update(values).eq('id', campaign.id)
         : supabase.from('campaigns').insert(values);
@@ -423,7 +478,7 @@ export async function openCampaignForm(campaign, onSaved) {
         }
       }
 
-      toast(campaign ? 'Project updated' : 'Project created');
+      toast(campaign ? `${isTemplate ? 'Template' : 'Project'} updated` : `${isTemplate ? 'Template' : 'Project'} created`);
       onSaved?.(data);
     },
   });
@@ -450,6 +505,30 @@ export async function openCampaignForm(campaign, onSaved) {
     setUpPicker(dialog, 'access_person', 'Add a person…',
       people.map(p => ({ id: p.id, name: p.name, group: state.departments.find(d => d.id === p.department_id)?.name || 'No department' })),
       before.filter(a => a.person_id).map(a => a.person_id));
+  }
+  // Picking a template fills in its details; the name, dates and owner stay yours
+  const templateSelect = dialog.querySelector('[name=template_id]');
+  if (templateSelect) {
+    const applyTemplate = () => {
+      const t = templates.find(x => x.id === templateSelect.value);
+      dialog.querySelector('[data-template-help]').hidden = !t;
+      dialog.querySelector('[data-privacy]').hidden = Boolean(t);
+      dialog.querySelector('[data-privacy-from-template]').hidden = !t;
+      if (!t) return;
+      const form = dialog.querySelector('form');
+      form.elements.description.value = t.description || '';
+      form.elements.planned_hours.value = t.planned_hours ?? 0;
+      deptSelect.value = t.department_id;
+      forSelect.innerHTML = forOptions(t.department_id, sharedSplit, currentFor(t));
+      explain();
+      if (!form.elements.name.value.trim()) form.elements.name.placeholder = t.name.replace(/\s*\(?\b(new\s+)?template\b\)?\s*/ig, ' ').trim();
+      const start = form.elements.start_date.value;
+      if (start && t.start_date && t.end_date) form.elements.end_date.value = addDays(start, daysBetween(t.start_date, t.end_date));
+    };
+    templateSelect.addEventListener('change', applyTemplate);
+    // A start date sets the end date to match the template's length
+    dialog.querySelector('[name=start_date]').addEventListener('change', () => { if (templateSelect.value) applyTemplate(); });
+    if (templateSelect.value) applyTemplate();
   }
   deptSelect.addEventListener('change', () => {
     const choices = forChoices(deptSelect.value, sharedSplit);

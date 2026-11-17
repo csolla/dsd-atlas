@@ -130,6 +130,14 @@ export function renderDesignSystem(el) {
           <span class="search-hit-meta"><strong>DSD Clinics Onboarding</strong> · To do · Ana</span></a></li>
       </ul>`)}
 
+    ${section('templates', 'Templates', 'Ready-made projects people copy. Marked wherever they appear, so nobody works in one by mistake.', [
+      'A <code>.template-flag</code> label next to the name in lists and search.',
+      'On the template itself, a <code>.template-note</code> banner explains what it is and offers <strong>Use this template</strong>.',
+    ], `
+      <p class="ds-gap"><strong>DSD Clinics Onboarding</strong> <span class="template-flag">Template</span></p>
+      <div class="template-note"><p><strong>Template.</strong> Set up its sections, tasks, subtasks and fields here. Nobody works in it.</p>
+        <button class="btn btn-primary btn-small" type="button">Use this template</button></div>`)}
+
     ${section('custom-fields', 'Custom fields', 'A project\'s own fields: managed in the Fields dialog, filled in the task panel, shown as List columns.', [
       'In the Fields dialog, each field is a row (<code>.field-list</code>) with its type, ↑ ↓, Edit and Delete; ready-made sets are cards (<code>.field-set</code>) with an Add button.',
       'In the task panel, fields sit in a two-column grid (<code>.custom-fields-grid</code>); text and several-choice fields take the full width. Money pairs a currency box with the amount (<code>.money-input</code>).',

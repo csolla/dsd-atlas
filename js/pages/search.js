@@ -39,6 +39,7 @@ function projectFlags(project) {
   return [
     project.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : '',
     project.archived_at ? '<span class="private-flag">Archived</span>' : '',
+    project.is_template ? '<span class="template-flag">Template</span>' : '',
   ].join('');
 }
 
