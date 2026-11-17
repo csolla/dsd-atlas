@@ -484,7 +484,6 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .board-col-new { padding-top: 6px; min-width: 140px; }
 .card-status { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--text); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .card-status-done { color: var(--muted); }
-.columns-switch { display: inline-flex; align-items: center; gap: 8px; }
 
 .task-card {
   background: var(--surface);

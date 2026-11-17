@@ -16,15 +16,11 @@ import { loadAccess, projectAudience, accessNames } from '../access.js';
 import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
 
-const VIEW_KEY = 'campaign-view';
 const DONE_SHOWN = 10;
 
 // Per campaign, for this visit: filters and the quick-add assignee/date
 const memory = {};
 
-function savedView() {
-  try { return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'board'; } catch { return 'board'; }
-}
 
 // openTask: a task to open straight away (from a shared task link)
 export async function renderCampaign(el, id, openTask = null) {
@@ -50,7 +46,7 @@ export async function renderCampaign(el, id, openTask = null) {
 
   memory[id] ||= { q: '', person: '', section: '', assignee: '', due: '', showAllDone: false, details: false };
   const page = {
-    el, campaign, tasks: tasksResult.value, sections: sectionsResult.value, view: savedView(), dragging: false, counts: {}, m: memory[id],
+    el, campaign, tasks: tasksResult.value, sections: sectionsResult.value, view: memory[id].view || 'kanban', dragging: false, counts: {}, m: memory[id],
   };
   const owner = personById(campaign.owner_id);
   // On a private project, only people who can see it can be assigned
@@ -115,16 +111,10 @@ export async function renderCampaign(el, id, openTask = null) {
         </select>
         <select data-section-filter aria-label="Show section" hidden></select>
         <span class="spacer"></span>
-        <span class="columns-switch" data-columns-switch hidden>
-          <span class="muted small" id="columns-label-${esc(id)}">Columns</span>
-          <span class="view-switch" role="group" aria-labelledby="columns-label-${esc(id)}">
-            <button type="button" data-columns="status">Status</button>
-            <button type="button" data-columns="section">Sections</button>
-          </span>
-        </span>
         <div class="view-switch" role="group" aria-label="View">
-          <button type="button" data-view="board">Board</button>
-          <button type="button" data-view="list">List</button>
+          <button type="button" data-view="kanban" title="Columns by status: To do, In progress, In review, Done">Kanban</button>
+          <button type="button" data-view="board" title="Columns by section">Board</button>
+          <button type="button" data-view="list" title="Tasks grouped by section">List</button>
         </div>
       </div>
       <div data-tasks></div>
@@ -149,13 +139,9 @@ export async function renderCampaign(el, id, openTask = null) {
   el.querySelector('[data-find]').addEventListener('input', event => { page.m.q = event.target.value; drawTasks(page); });
   el.querySelector('[data-person]').addEventListener('change', event => { page.m.person = event.target.value; drawTasks(page); });
   el.querySelector('[data-section-filter]').addEventListener('change', event => { page.m.section = event.target.value; drawTasks(page); });
-  el.querySelectorAll('[data-columns]').forEach(button => button.addEventListener('click', () => {
-    page.m.columns = button.dataset.columns;
-    drawTasks(page);
-  }));
   el.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     page.view = button.dataset.view;
-    try { localStorage.setItem(VIEW_KEY, page.view); } catch { /* not saved; fine */ }
+    page.m.view = page.view;
     drawTasks(page);
   }));
 
@@ -214,12 +200,6 @@ async function loadHours(page) {
 
 // Filters: words in the task or its subtasks; a person as assignee of the
 // task or any of its subtasks
-// The Board's columns: sections (the default once a project has them, as in
-// the List) or statuses
-function sectionColumns(page) {
-  return page.sections.length > 0 && (page.m.columns || 'section') === 'section';
-}
-
 function matches(page, task, subtasks) {
   if (page.m.section && (task.section_id || 'none') !== page.m.section) return false;
   const q = page.m.q.trim().toLowerCase();
@@ -241,26 +221,23 @@ function drawTasks(page) {
   el.querySelectorAll('[data-view]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.view === view)));
 
-  // Section columns already split the board by section, so no section filter
-  const bySection = view === 'board' && sectionColumns(page);
+  // Views: Kanban (status columns, the default), Board (section columns)
+  // and List (grouped by section). The Board already splits by section, so
+  // it has no section filter.
+  const bySection = view === 'board';
   if (bySection) page.m.section = '';
-  const columnsSwitch = el.querySelector('[data-columns-switch]');
-  columnsSwitch.hidden = view !== 'board' || !page.sections.length;
-  columnsSwitch.querySelectorAll('[data-columns]').forEach(button =>
-    button.setAttribute('aria-pressed', String((button.dataset.columns === 'section') === bySection)));
   drawSectionFilter(page, bySection);
   const container = el.querySelector('[data-tasks]');
   const subtasksOf = id => tasks.filter(t => t.parent_id === id);
-  // Sections show even before they have tasks
-  if ((view === 'list' || bySection) && page.sections.length && !page.m.q.trim() && !page.m.person && !page.m.section) {
+  // Board and List always show their sections and + Add section, even
+  // before there are tasks
+  if ((view === 'list' || bySection) && !page.m.q.trim() && !page.m.person && !page.m.section) {
     if (view === 'list') drawList(page, container, main, subtasksOf);
     else drawSectionBoard(page, container, main, subtasksOf);
     return;
   }
   if (!main.length) {
-    container.innerHTML = `<div class="empty-state"><p>No tasks yet.${canEditWork() ? ' Type a title above and press Enter to add the first one.' : ''}</p>
-      ${canEditWork() && view === 'list' ? '<button class="btn btn-small" type="button" data-section-new>+ Add section</button>' : ''}</div>`;
-    container.querySelector('[data-section-new]')?.addEventListener('click', () => openSectionForm(page, null));
+    container.innerHTML = `<div class="empty-state"><p>No tasks yet.${canEditWork() ? ' Type a title above and press Enter to add the first one.' : ''}</p></div>`;
     return;
   }
   const filtering = Boolean(page.m.q.trim() || page.m.person || page.m.section);
@@ -317,7 +294,7 @@ function assigneeBadge(task, size = 24) {
 
 // Board ---------------------------------------------------------------------
 
-// showStatus: on section columns, each card says its status
+// showStatus: on the Board (section columns), each card says its status
 function taskCard(page, task, subtasksOf, showStatus = false) {
   return `
     <article class="task-card ${task.status === 'done' ? 'is-done' : ''}" data-id="${esc(task.id)}" tabindex="0">
@@ -364,7 +341,7 @@ function drawSectionBoard(page, container, main, subtasksOf) {
   const columns = [
     { id: '', name: 'No section', tasks: inGroup('') },
     ...sections.map(s => ({ id: s.id, name: s.name, tasks: inGroup(s.id) })),
-  ].filter(c => (c.id ? !filtering || c.tasks.length : c.tasks.length));
+  ].filter(c => (c.id ? !filtering || c.tasks.length : c.tasks.length || !sections.length));
 
   container.innerHTML = `
     <div class="board board-sections">

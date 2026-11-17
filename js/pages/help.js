@@ -94,10 +94,14 @@ const SECTIONS = [
       <h3>Add and organise tasks</h3>
       <ol>
         <li>Open the project and type a title in <strong>Add a task and press Enter</strong>. It goes to To do.</li>
-        <li>On the <strong>Board</strong>, drag cards between To do, In progress, In review and Done, and up or down to reorder.</li>
-        <li><strong>List</strong> shows the same tasks as a table.</li>
-        <li><strong>Sections</strong> split a project into phases or groups, like Asana's (for example Pre-onboarding, During coaching, Graduation). In <strong>List</strong>, click <strong>+ Add section</strong> under the table. Each section has its own <strong>+ Add task</strong>, ↑ ↓ to change its place, Rename and Delete. Drag a task onto another section to move it, or change <strong>Section</strong> in its side panel. Deleting a section keeps its tasks, under No section.</li>
-        <li>Once a project has sections, its <strong>Board</strong> shows one column per section, the same groups as the List, and each card shows its status. Use <strong>Columns: Status | Sections</strong> above the board to switch back to status columns; there, a section filter appears, and while a section is picked new tasks go into it.</li>
+        <li>Every project has three views, switched at the top right of its tasks. It opens on <strong>Kanban</strong>.
+          <ul>
+            <li><strong>Kanban</strong>: columns To do, In progress, In review and Done. Drag cards between them, and up or down to reorder.</li>
+            <li><strong>Board</strong>: one column per section. Each card shows its status. Drag a card to another column to change its section.</li>
+            <li><strong>List</strong>: a table, grouped by section.</li>
+          </ul></li>
+        <li><strong>Sections</strong> split a project into phases or groups, like Asana's (for example Pre-onboarding, During coaching, Graduation). Click <strong>+ Add section</strong> at the end of the Board or under the List. In the List, each section has ↑ ↓ to change its place, Rename and Delete. Each section has its own <strong>+ Add task</strong>. You can also change <strong>Section</strong> in a task's side panel. Deleting a section keeps its tasks, under No section.</li>
+        <li>In Kanban and List, once a project has sections, a section filter appears next to the person filter. While a section is picked, new tasks go into it.</li>
         <li>Click a card to open its side panel: assignee, due date, section, status and description save as you leave each field.</li>
         <li>Add <strong>subtasks</strong> at the bottom of the panel, each with its own optional assignee and date. Assigning a task doesn't assign its subtasks.</li>
       </ol>
