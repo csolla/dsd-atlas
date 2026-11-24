@@ -119,7 +119,7 @@ export async function renderCampaign(el, id, openTask = null) {
       ${canEditWork() && !campaign.archived_at ? `
         <form class="quick-add-bar" data-quick-add>
           <input class="quick-title" placeholder="Add a task and press Enter" aria-label="New task title" maxlength="300">
-          <select data-qa="assignee" aria-label="Assign new tasks to">
+          <select data-qa="assignee" aria-label="Assign new tasks to" ${personal ? 'hidden' : ''}>
             <option value="">Unassigned</option>
             ${options(Object.fromEntries(team.map(p => [p.id, p.id === state.me.id ? `${p.name} (me)` : p.name])), page.m.assignee)}
           </select>

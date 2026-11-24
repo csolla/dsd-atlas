@@ -84,7 +84,7 @@ window.addEventListener('hashchange', closeTaskPanel);
 
 async function loadTask(taskId) {
   const { data: task, error } = await supabase
-    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, private, owner_id, created_by, is_template)').eq('id', taskId).maybeSingle();
+    .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, private, owner_id, created_by, is_template, personal_of)').eq('id', taskId).maybeSingle();
   if (error) throw error;
   if (!task) return null;
   const { data: subtasks, error: subError } = await supabase.from('tasks').select('*').eq('parent_id', taskId);
@@ -103,6 +103,11 @@ async function loadTask(taskId) {
 // People who can be assigned work (on a private project, only those who
 // can see it), plus whoever is assigned already
 function assigneeOptions(selectedId) {
+  // Personal to-dos are always their person's (the database makes sure)
+  if (current.task.campaign.personal_of) {
+    const me = state.people.find(p => p.id === current.task.campaign.personal_of);
+    return options({ [me?.id || '']: me?.name || 'Me' }, me?.id);
+  }
   const audience = projectAudience(current.task.campaign, current.access);
   const people = state.people.filter(p => audience.includes(p) || p.id === selectedId);
   return `<option value="">Unassigned</option>${options(Object.fromEntries(people.map(p => [p.id, p.name])), selectedId)}`;

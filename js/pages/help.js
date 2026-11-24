@@ -45,6 +45,7 @@ const SECTIONS = [
       <p><a href="#/todos">My to-dos</a> is the first page you see when you open Atlas. Click the <strong>DSD Atlas</strong> logo at the top left to come back to it from anywhere.</p>
       <ul>
         <li>It's your own list for the small things that don't belong in a team project: calls to make, things to check, reminders. <strong>Only you can see it</strong>, not even Admins.</li>
+        <li>Everything you add here is assigned to you automatically, so your to-dos also show in <a href="#/my-tasks">My tasks</a> with the rest of your work.</li>
         <li>It works like a project: add a task and press Enter, add subtasks, due dates, notes and files, switch between List, Kanban, Board and Calendar, and log time on it.</li>
         <li>Nobody else can be added to it, and it doesn't show in Projects or Dashboards. To others, hours logged on it show as "Private project".</li>
       </ul>`,
