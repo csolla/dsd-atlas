@@ -66,43 +66,46 @@ export async function renderCampaign(el, id, openTask = null) {
     fields: fieldsResult.value, values: valuesResult.value, view: memory[id].view || savedView(), dragging: false, counts: {}, m: memory[id],
   };
   const owner = personById(campaign.owner_id);
+  // Someone's own to-do list: a project only they can see, with no project admin
+  const personal = Boolean(campaign.personal_of);
   // On a private project, only people who can see it can be assigned
   const access = campaign.private ? await loadAccess(id).catch(() => []) : [];
   const team = projectAudience(campaign, access);
 
   el.innerHTML = `
-    <a class="back-link" href="#/campaigns">← Projects</a>
+    ${personal ? '' : '<a class="back-link" href="#/campaigns">← Projects</a>'}
     <section class="card campaign-summary">
       <div class="summary-top">
         <div class="summary-title">
           <h1>${esc(campaign.name)}</h1>
           <div class="summary-meta">
+            ${personal ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Only you can see this list</span>' : `
             ${unitLine(campaign)}
             ${campaign.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
             ${statusPill(campaign.status)}
             <span>${esc(fmtCompactRange(campaign.start_date, campaign.end_date))}</span>
-            ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}
+            ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}`}
           </div>
         </div>
         <div class="summary-stats">
           <div class="stat"><span class="stat-label">Hours</span><span data-hours>…</span></div>
           <div class="stat"><span class="stat-label">Tasks done</span><span data-progress></span></div>
         </div>
-        <div class="actions">
+        ${personal ? '' : `<div class="actions">
           <button class="btn btn-ghost btn-small" type="button" data-toggle-details aria-expanded="${page.m.details}">Details</button>
           ${canEditWork() ? `<button class="btn btn-small" type="button" data-edit>Edit</button>
             ${campaign.is_template ? '' : '<button class="btn btn-small btn-ghost" type="button" data-save-template>Save as template</button>'}
             <button class="btn btn-small btn-ghost" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>` : ''}
-        </div>
+        </div>`}
       </div>
       ${campaign.is_template ? `<div class="template-note" role="status">
         <p><strong>Template.</strong> Set up its sections, tasks, subtasks and fields here. Nobody works in it: projects made from it copy everything, with task dates moved to the new start date.</p>
         ${canEditWork() ? '<button class="btn btn-primary btn-small" type="button" data-use-template>Use this template</button>' : ''}
       </div>` : ''}
-      ${campaign.private ? accessLine(access) : ''}
+      ${campaign.private && !personal ? accessLine(access) : ''}
       ${campaign.archived_at ? `<p class="archived-note" role="status"><strong>Archived</strong> on ${esc(fmtDate(campaign.archived_at.slice(0, 10)))}${personById(campaign.archived_by) ? ` by ${esc(personById(campaign.archived_by).name)}` : ''}.
         Kept for reference: its hours still count in Dashboards, but no new time can be logged on it.</p>` : ''}
-      <div class="campaign-details" data-details ${page.m.details ? '' : 'hidden'}>
+      ${personal ? '' : `<div class="campaign-details" data-details ${page.m.details ? '' : 'hidden'}>
         ${campaign.description ? `<p class="description">${esc(campaign.description)}</p>` : '<p class="muted">No description.</p>'}
         <p class="muted small">${esc(fmtDate(campaign.start_date))}${campaign.end_date ? ` to ${esc(fmtDate(campaign.end_date))}` : ''} · Planned ${fmtHours(campaign.planned_hours)}</p>
         ${isAdmin() ? `
@@ -110,7 +113,7 @@ export async function renderCampaign(el, id, openTask = null) {
             <button class="btn btn-small btn-danger-outline" type="button" data-delete hidden>Delete project</button>
             <span class="muted small" data-delete-note hidden>This project has hours logged, so it can't be deleted. Set it to Done or On hold instead.</span>
           </div>` : ''}
-      </div>
+      </div>`}
     </section>
     <section class="section tasks-section">
       ${canEditWork() && !campaign.archived_at ? `
@@ -144,7 +147,7 @@ export async function renderCampaign(el, id, openTask = null) {
       <div data-tasks></div>
     </section>`;
 
-  el.querySelector('[data-toggle-details]').addEventListener('click', event => {
+  el.querySelector('[data-toggle-details]')?.addEventListener('click', event => {
     page.m.details = !page.m.details;
     event.currentTarget.setAttribute('aria-expanded', String(page.m.details));
     el.querySelector('[data-details]').hidden = !page.m.details;

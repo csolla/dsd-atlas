@@ -119,8 +119,9 @@ function matchesFilters(campaign) {
     && (!q || `${campaign.name} ${campaign.description || ''}`.toLowerCase().includes(q));
 }
 
+// Personal to-dos never show here (they're each person's first page).
 // Templates only show under Templates; archived projects only under Archived
-const inView = (campaign, view) => (VIEWS[view].template
+const inView = (campaign, view) => !campaign.personal_of && (VIEWS[view].template
   ? campaign.is_template
   : !campaign.is_template && Boolean(campaign.archived_at) === Boolean(VIEWS[view].archived)
     && (!VIEWS[view].statuses || VIEWS[view].statuses.includes(campaign.status)));

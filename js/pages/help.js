@@ -39,10 +39,21 @@ const SECTIONS = [
       </ul>`,
   },
   {
+    id: 'todos',
+    title: 'My to-dos: your own list',
+    html: `
+      <p><a href="#/todos">My to-dos</a> is the first page you see when you open Atlas. Click the <strong>DSD Atlas</strong> logo at the top left to come back to it from anywhere.</p>
+      <ul>
+        <li>It's your own list for the small things that don't belong in a team project: calls to make, things to check, reminders. <strong>Only you can see it</strong>, not even Admins.</li>
+        <li>It works like a project: add a task and press Enter, add subtasks, due dates, notes and files, switch between List, Kanban, Board and Calendar, and log time on it.</li>
+        <li>Nobody else can be added to it, and it doesn't show in Projects or Dashboards. To others, hours logged on it show as "Private project".</li>
+      </ul>`,
+  },
+  {
     id: 'my-tasks',
     title: 'Your daily routine: My tasks',
     html: `
-      <p>Start each day on <a href="#/my-tasks">My tasks</a>. It lists every task and subtask assigned to you, across all projects, grouped by due date.</p>
+      <p>Check <a href="#/my-tasks">My tasks</a> each day. It lists every task and subtask assigned to you, across all projects, grouped by due date.</p>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Group</th><th>What's in it</th></tr></thead>
         <tbody>

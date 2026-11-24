@@ -15,6 +15,7 @@ export async function loadAccess(campaignId) {
 
 export function personCanSee(person, campaign, access = []) {
   if (!person || !campaign) return false;
+  if (campaign.personal_of) return person.id === campaign.personal_of;
   if (!campaign.private || person.role === 'admin') return true;
   if (person.id === campaign.owner_id || person.id === campaign.created_by) return true;
   return access.some(a => a.person_id === person.id || (a.department_id && a.department_id === person.department_id));

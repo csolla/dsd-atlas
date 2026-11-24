@@ -10,6 +10,7 @@ import { renderMyTasks } from './pages/my-tasks.js';
 import { renderMyTime } from './pages/my-time.js';
 import { renderCampaigns } from './pages/campaigns.js';
 import { renderCampaign } from './pages/campaign.js';
+import { renderTodos } from './pages/todos.js';
 import { renderCapacityPage } from './pages/settings.js';
 import { renderDesignSystem } from './pages/design-system.js';
 import { renderProfile } from './pages/profile.js';
@@ -23,6 +24,7 @@ const WORK = ['admin', 'member'];
 
 // Each page, who can open it, and the nav item it belongs to
 const ROUTES = [
+  { path: /^\/todos$/, roles: WORK, nav: null, render: renderTodos },
   { path: /^\/my-tasks$/, roles: WORK, nav: 'my-tasks', render: renderMyTasks },
   { path: /^\/campaigns$/, roles: WORK, nav: 'campaigns', render: renderCampaigns },
   { path: /^\/campaigns\/([0-9a-f-]{36})$/, roles: WORK, nav: 'campaigns', render: (el, id) => renderCampaign(el, id) },
@@ -51,9 +53,10 @@ const NAV = [
   { key: 'capacity', label: 'Capacity', href: '#/capacity/people', roles: ['admin'] },
 ];
 
-// Directors land on Dashboards; everyone else on My tasks
+// Directors land on Dashboards; everyone else on My to-dos (also where the
+// DSD Atlas logo goes)
 function homePath() {
-  return isDirector() ? '/dashboards' : '/my-tasks';
+  return isDirector() ? '/dashboards' : '/todos';
 }
 
 const app = document.getElementById('app');
