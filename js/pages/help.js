@@ -94,14 +94,15 @@ const SECTIONS = [
       <h3>Add and organise tasks</h3>
       <ol>
         <li>Open the project and type a title in <strong>Add a task and press Enter</strong>. It goes to To do.</li>
-        <li>Every project has three views, switched at the top right of its tasks. It opens on <strong>List</strong> the first time, then on whichever view you used last.
+        <li>Every project has four views, switched at the top right of its tasks. It opens on <strong>List</strong> the first time, then on whichever view you used last.
           <ul>
+            <li><strong>List</strong>: a table, grouped by section.</li>
             <li><strong>Kanban</strong>: columns To do, In progress, In review and Done. Drag cards between them, and up or down to reorder.</li>
             <li><strong>Board</strong>: one column per section. Each card shows its status. Drag a card to another column to change its section.</li>
-            <li><strong>List</strong>: a table, grouped by section.</li>
+            <li><strong>Calendar</strong>: one month at a time, each task on its due date. Use ‹ and › to change month. Drag a task to another day to change its due date, or click <strong>+</strong> on a day to add a task due that day. Tasks without a due date only show in the other views.</li>
           </ul></li>
         <li><strong>Sections</strong> split a project into phases or groups, like Asana's (for example Pre-onboarding, During coaching, Graduation). Click <strong>+ Add section</strong> at the end of the Board or under the List. In the List, each section has ↑ ↓ to change its place, Rename and Delete. Each section has its own <strong>+ Add task</strong>. You can also change <strong>Section</strong> in a task's side panel. Deleting a section keeps its tasks, under No section.</li>
-        <li>In Kanban and List, once a project has sections, a section filter appears next to the person filter. While a section is picked, new tasks go into it.</li>
+        <li>In List, Kanban and Calendar, once a project has sections, a section filter appears next to the person filter. While a section is picked, new tasks go into it.</li>
         <li>Click a card to open its side panel: assignee, due date, section, status and description save as you leave each field.</li>
         <li><strong>Fields</strong> add your project's own information to every task, such as an amount, an invoice date or a request status. Click <strong>Fields</strong> above the tasks to add one (text, number, money, date, a choice, several choices, or a person), or add a ready-made set: <strong>Invoices</strong>, <strong>Requests</strong>, <strong>Bug tracker</strong> or <strong>Estimate</strong>. Fill them in right in the <strong>List</strong> view, where each field is a column (type, pick or tick, and it saves as you go), or in the task's side panel. On the Kanban and Board cards, filled-in fields show as tags under the title, values only (up to four, then “+ more”; hover a tag to see which field it is). A field's type can't change later, but its name and choices can. Deleting a field deletes what was filled in it.</li>
         <li>Add <strong>subtasks</strong> at the bottom of the panel, each with its own optional assignee and date. Assigning a task doesn't assign its subtasks.</li>

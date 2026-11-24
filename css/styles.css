@@ -505,6 +505,29 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .spacer { flex: 1; }
 .drag-ghost { opacity: 0.4; }
 
+/* Calendar view: one month, Monday first, tasks on their due date */
+.cal { display: grid; gap: 10px; }
+.cal-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--border); gap: 1px; }
+.cal-weekday { background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 8px; }
+.cal-day { background: var(--surface); min-height: 104px; padding: 4px 6px 8px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cal-day.is-other-month { background: var(--surface-2); }
+.cal-day.is-other-month .cal-day-no { color: var(--muted); }
+.cal-day-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 24px; }
+.cal-day-no { font-size: 13px; font-weight: 600; color: var(--text); }
+.cal-day.is-today .cal-day-short { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--accent); color: var(--accent-text); padding: 0 4px; }
+.cal-today, .cal-day-long { display: none; }
+.cal-add { font-size: 16px; padding: 0 6px; opacity: 0; }
+.cal-day:hover .cal-add, .cal-add:focus-visible { opacity: 1; }
+.cal-tasks { display: flex; flex-direction: column; gap: 3px; flex: 1; min-height: 24px; }
+.cal-task { display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; cursor: grab; min-width: 0; }
+.cal-task:hover { border-color: var(--muted); }
+.cal-task-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.cal-task.is-done .cal-task-title { color: var(--muted); text-decoration: line-through; }
+.cal-task.is-late { border-color: var(--danger); }
+.cal-late { color: var(--danger); font-weight: 700; font-size: 11px; }
+.cal-task .avatar { flex-shrink: 0; }
+
 .due { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .due.overdue { color: var(--danger); font-weight: 600; }
 .subcount { font-size: 13px; color: var(--muted); white-space: nowrap; }
@@ -1204,6 +1227,14 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
   .board { grid-template-columns: repeat(4, 78vw); scroll-snap-type: x mandatory; }
   .board-sections { grid-template-columns: none; grid-auto-columns: 78vw; }
   .board-col { scroll-snap-align: start; }
+  /* Calendar on phones: a list of the days that have tasks */
+  .cal-grid { grid-template-columns: 1fr; }
+  .cal-weekday, .cal-day:not(.has-tasks):not(.is-today) { display: none; }
+  .cal-day { min-height: 0; }
+  .cal-day-short { display: none; }
+  .cal-day-long, .cal-today { display: inline; }
+  .cal-add { opacity: 1; }
+  .cal-task { font-size: 14px; padding: 6px 8px; }
   .panel-fields { grid-template-columns: 1fr; gap: 0; }
   .custom-fields-grid { grid-template-columns: 1fr; }
   .field-set { flex-wrap: wrap; }

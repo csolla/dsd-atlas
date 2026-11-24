@@ -4,7 +4,7 @@ import { state, canEditWork, isAdmin, personById } from '../state.js';
 import { onTasksChanged, onLiveChange } from '../realtime.js';
 import { loadCampaignHours } from '../time.js';
 import {
-  loadCampaignTasks, createTask, updateTask, positionBetween, byPosition, tasksDonePct, isOverdue, friendlyDue,
+  loadCampaignTasks, createTask, updateTask, positionBetween, byPosition, tasksDonePct, isOverdue, friendlyDue, isoDate, todayIso,
   loadSections, createSection, updateSection, deleteSection,
 } from '../tasks.js';
 import {
@@ -25,7 +25,7 @@ const memory = {};
 
 // Projects open in the view this person last picked (List the first time)
 const VIEW_KEY = 'project-view';
-const VIEWS = ['list', 'kanban', 'board'];
+const VIEWS = ['list', 'kanban', 'board', 'calendar'];
 function savedView() {
   try {
     const view = localStorage.getItem(VIEW_KEY);
@@ -134,9 +134,10 @@ export async function renderCampaign(el, id, openTask = null) {
         <span class="spacer"></span>
         ${canEditWork() ? '<button class="btn btn-ghost btn-small" type="button" data-fields title="This project\'s own fields, such as an amount or a date">Fields</button>' : ''}
         <div class="view-switch" role="group" aria-label="View">
+          <button type="button" data-view="list" title="Tasks grouped by section">List</button>
           <button type="button" data-view="kanban" title="Columns by status: To do, In progress, In review, Done">Kanban</button>
           <button type="button" data-view="board" title="Columns by section">Board</button>
-          <button type="button" data-view="list" title="Tasks grouped by section">List</button>
+          <button type="button" data-view="calendar" title="Tasks on their due date, month by month">Calendar</button>
         </div>
       </div>
       <div data-tasks></div>
@@ -264,8 +265,8 @@ function drawTasks(page) {
   el.querySelectorAll('[data-view]').forEach(button =>
     button.setAttribute('aria-pressed', String(button.dataset.view === view)));
 
-  // Views: Kanban (status columns, the default), Board (section columns)
-  // and List (grouped by section). The Board already splits by section, so
+  // Views: List (grouped by section), Kanban (status columns), Board
+  // (section columns) and Calendar (tasks on their due date). The Board already splits by section, so
   // it has no section filter.
   const bySection = view === 'board';
   if (bySection) page.m.section = '';
@@ -290,6 +291,7 @@ function drawTasks(page) {
     return;
   }
   if (view === 'list') drawList(page, container, shown, subtasksOf);
+  else if (view === 'calendar') drawCalendar(page, container, shown);
   else if (bySection) drawSectionBoard(page, container, shown, subtasksOf);
   else drawBoard(page, container, shown, subtasksOf, filtering);
 }
@@ -515,6 +517,130 @@ async function moveTask(page, event) {
     await updateTask(task.id, { status, position });
   } catch (error) {
     Object.assign(task, before);
+    drawTasks(page);
+    toast(errorMessage(error), 'error');
+  }
+}
+
+// Calendar ------------------------------------------------------------------
+
+// One month, Monday first. Each task sits on its due date only (never spread
+// over the days before it). Tasks without a date are counted, not shown.
+// Editors drag a task to another day to change its due date, and add a task
+// on a day with its +.
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function shiftMonth(iso, step) {
+  const [year, month] = iso.split('-').map(Number);
+  return isoDate(new Date(year, month - 1 + step, 1));
+}
+
+function drawCalendar(page, container, main) {
+  const month = page.m.calMonth ||= `${todayIso().slice(0, 7)}-01`;
+  const [year, monthNo] = month.split('-').map(Number);
+  const first = new Date(year, monthNo - 1, 1);
+  const last = new Date(year, monthNo, 0);
+  const day = new Date(year, monthNo - 1, 1 - ((first.getDay() + 6) % 7));
+  const end = new Date(year, monthNo - 1, last.getDate() + (6 - ((last.getDay() + 6) % 7)));
+  const days = [];
+  for (; day <= end; day.setDate(day.getDate() + 1)) days.push(isoDate(day));
+
+  const byDay = {};
+  main.filter(t => t.due_date).forEach(t => (byDay[t.due_date] ||= []).push(t));
+  const order = (a, b) => (a.status === 'done') - (b.status === 'done') || byPosition(a, b);
+  const undated = main.filter(t => !t.due_date).length;
+  const today = todayIso();
+  const edit = canEditWork();
+  const longDate = iso => new Date(`${iso}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  container.innerHTML = `
+    <div class="cal">
+      <div class="cal-head">
+        <div class="week-nav">
+          <button class="btn btn-small" type="button" data-cal-step="-1" aria-label="Previous month">‹</button>
+          <button class="btn btn-small" type="button" data-cal-step="0">Today</button>
+          <button class="btn btn-small" type="button" data-cal-step="1" aria-label="Next month">›</button>
+          <strong>${esc(first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }))}</strong>
+        </div>
+        ${undated ? `<span class="muted small">${undated} ${undated === 1 ? 'task has' : 'tasks have'} no due date (see List)</span>` : ''}
+      </div>
+      <div class="cal-grid">
+        ${WEEKDAYS.map(name => `<div class="cal-weekday">${name}</div>`).join('')}
+        ${days.map(iso => {
+          const tasks = (byDay[iso] || []).sort(order);
+          const classes = ['cal-day', iso.slice(0, 7) !== month.slice(0, 7) && 'is-other-month', iso === today && 'is-today', tasks.length && 'has-tasks'].filter(Boolean).join(' ');
+          return `
+            <div class="${classes}">
+              <div class="cal-day-head">
+                <span class="cal-day-no" ${iso === today ? 'aria-current="date"' : ''}><span class="cal-day-short">${Number(iso.slice(8))}</span><span class="cal-day-long">${esc(longDate(iso))}</span>${iso === today ? ' <span class="cal-today">Today</span>' : ''}</span>
+                ${edit ? `<button class="icon-btn cal-add" type="button" data-cal-add="${iso}" aria-label="Add a task due ${esc(longDate(iso))}" title="Add a task due this day">+</button>` : ''}
+              </div>
+              <div class="cal-tasks" data-date="${iso}">
+                ${tasks.map(task => calendarTask(task)).join('')}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  container.querySelectorAll('[data-cal-step]').forEach(button => button.addEventListener('click', () => {
+    const step = Number(button.dataset.calStep);
+    page.m.calMonth = step ? shiftMonth(month, step) : `${todayIso().slice(0, 7)}-01`;
+    drawTasks(page);
+  }));
+  container.querySelectorAll('.cal-task').forEach(chip => {
+    chip.addEventListener('click', () => openTaskPanel(chip.dataset.id));
+    chip.addEventListener('keydown', event => { if (event.key === 'Enter') openTaskPanel(chip.dataset.id); });
+  });
+  container.querySelectorAll('[data-cal-add]').forEach(button => button.addEventListener('click', () => {
+    const due = button.dataset.calAdd;
+    formDialog({
+      title: `New task due ${longDate(due)}`,
+      submitLabel: 'Add task',
+      body: `<label class="field"><span>Title</span><input name="title" required maxlength="300" autofocus></label>`,
+      onSubmit: async form => {
+        const title = form.elements.title.value.trim();
+        if (!title) return 'Give the task a title.';
+        if (!(await addTask(page, title, 'todo', shownSectionId(page), due))) return 'The task could not be added. Try again.';
+      },
+    });
+  }));
+  if (!edit) return;
+  container.querySelectorAll('.cal-tasks').forEach(list => Sortable.create(list, {
+    group: 'calendar',
+    animation: 150,
+    delayOnTouchOnly: true,
+    delay: 150,
+    ghostClass: 'drag-ghost',
+    onStart: () => { page.dragging = true; },
+    onEnd: event => moveToDay(page, event),
+  }));
+}
+
+function calendarTask(task) {
+  const late = isOverdue(task.due_date, task.status);
+  const assignee = personById(task.assignee_id);
+  return `
+    <article class="cal-task ${task.status === 'done' ? 'is-done' : ''} ${late ? 'is-late' : ''}" data-id="${esc(task.id)}" tabindex="0"
+      title="${esc(`${task.title}${assignee ? ` · ${assignee.name}` : ''} · ${TASK_STATUSES[task.status] || task.status}`)}">
+      ${late ? '<span class="cal-late">Late</span>' : ''}<span class="cal-task-title">${esc(task.title)}</span>
+      ${assignee ? avatar(assignee, 18) : ''}
+    </article>`;
+}
+
+// Dropped on another day: that day becomes the due date
+async function moveToDay(page, event) {
+  page.dragging = false;
+  const due = event.to.dataset.date;
+  const task = page.tasks.find(t => t.id === event.item.dataset.id);
+  if (!task || event.from === event.to) { setTimeout(() => drawTasks(page), 0); return; }
+  const before = task.due_date;
+  task.due_date = due;
+  setTimeout(() => drawTasks(page), 0);
+  try {
+    await updateTask(task.id, { due_date: due });
+  } catch (error) {
+    task.due_date = before;
     drawTasks(page);
     toast(errorMessage(error), 'error');
   }
@@ -826,7 +952,7 @@ async function moveToSection(page, event) {
 
 // New tasks go to the bottom of their column, with the quick-add
 // assignee and due date
-async function addTask(page, title, status, sectionId = shownSectionId(page)) {
+async function addTask(page, title, status, sectionId = shownSectionId(page), due = page.m.due || null) {
   const column = page.tasks.filter(t => !t.parent_id && t.status === status);
   const last = Math.max(0, ...column.map(t => t.position));
   try {
@@ -837,7 +963,7 @@ async function addTask(page, title, status, sectionId = shownSectionId(page)) {
       status,
       position: last + 1000,
       assignee_id: page.m.assignee || null,
-      due_date: page.m.due || null,
+      due_date: due,
     });
     if (!page.tasks.some(t => t.id === task.id)) page.tasks.push(task);
     drawTasks(page);

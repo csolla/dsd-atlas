@@ -164,9 +164,10 @@ export function renderDesignSystem(el) {
     ${section('task-sections', 'Task sections', 'Group a project\'s tasks into phases in the List view.', [
       'A header row per section (<code>.task-section-row</code>) with its name, task count and, for editors, ↑ ↓, Rename and Delete.',
       'Each section ends with its own <strong>+ Add task</strong>; an empty section says so.',
-      'Projects have three views in one <code>.view-switch</code>: Kanban (status columns), Board (section columns) and List. On the Board, each card shows its status as a <code>.card-status</code> label.',
+      'Projects have four views in one <code>.view-switch</code>: List, Kanban (status columns), Board (section columns) and Calendar (<code>.cal</code>: a month grid, each task as a <code>.cal-task</code> on its due date; late tasks say "Late" as well as turning red; on phones it becomes a list of the days that have tasks). On the Board, each card shows its status as a <code>.card-status</code> label.',
     ], `
-      <p class="ds-gap"><span class="view-switch" role="group" aria-label="View"><button type="button" aria-pressed="true">Kanban</button><button type="button">Board</button><button type="button">List</button></span></p>
+      <p class="ds-gap"><span class="view-switch" role="group" aria-label="View"><button type="button" aria-pressed="true">List</button><button type="button">Kanban</button><button type="button">Board</button><button type="button">Calendar</button></span></p>
+      <p class="ds-gap" style="max-width:260px"><span class="cal-task"><span class="cal-task-title">Newsletter #48</span></span> <span class="cal-task is-late"><span class="cal-late">Late</span><span class="cal-task-title">Pay Aurion invoice</span></span> <span class="cal-task is-done"><span class="cal-task-title">Book venue</span></span></p>
       <p class="ds-gap"><span class="card-status">In progress</span> <span class="card-status card-status-done">Done</span></p>
       <div class="table-wrap"><table class="table task-table">
         <tbody>
