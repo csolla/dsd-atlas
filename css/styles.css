@@ -548,6 +548,8 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .task-section-total td:nth-child(2) { color: var(--muted); font-weight: 500; }
 .task-section-total.is-grand td { border-top: 2px solid var(--border); }
 .field-total { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Project timer, under the project's hours */
+.project-timer { margin-top: 6px; }
 /* A template task's role, next to its usual assignee */
 .role-tag { margin-top: 4px; }
 .total-line { display: block; }

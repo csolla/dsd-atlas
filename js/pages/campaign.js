@@ -18,6 +18,7 @@ import { openTaskPanel } from './task-panel.js';
 import { loadFields, loadProjectValues, formatValue, fieldInput, readFieldInput, saveValue } from '../fields.js';
 import { openFieldsDialog } from '../fields-dialog.js';
 import { hasAllWords } from '../search.js';
+import { startTimer } from '../timer.js';
 
 const DONE_SHOWN = 10;
 
@@ -94,7 +95,8 @@ export async function renderCampaign(el, id, openTask = null) {
           </div>
         </div>
         <div class="summary-stats">
-          <div class="stat"><span class="stat-label">Hours</span><span data-hours>…</span></div>
+          <div class="stat"><span class="stat-label">Hours</span><span data-hours>…</span>
+            ${canEditWork() && !campaign.is_template && !campaign.archived_at ? '<button class="btn btn-small project-timer" type="button" data-project-timer title="Time on the project as a whole, not one task: it goes on its General work task">▶ Start timer</button>' : ''}</div>
           <div class="stat"><span class="stat-label">Tasks done</span><span data-progress></span></div>
         </div>
         ${personal ? '' : `<div class="actions">
@@ -153,6 +155,7 @@ export async function renderCampaign(el, id, openTask = null) {
       <div data-tasks></div>
     </section>`;
 
+  el.querySelector('[data-project-timer]')?.addEventListener('click', () => startProjectTimer(page));
   el.querySelector('[data-toggle-details]')?.addEventListener('click', event => {
     page.m.details = !page.m.details;
     event.currentTarget.setAttribute('aria-expanded', String(page.m.details));
@@ -1007,6 +1010,31 @@ async function moveToSection(page, event) {
     drawTasks(page);
     toast(errorMessage(error), 'error');
   }
+}
+
+// Project timer ---------------------------------------------------------------
+
+// Time on the project as a whole goes on its "General work" task (project
+// time always needs a task), made the first time it's needed
+const GENERAL_WORK = 'General work';
+
+async function startProjectTimer(page) {
+  let task = page.tasks.find(t => !t.parent_id && t.title === GENERAL_WORK);
+  if (!task) {
+    try {
+      const last = Math.max(0, ...page.tasks.filter(t => !t.parent_id && t.status === 'in_progress').map(t => t.position));
+      task = await createTask({
+        campaign_id: page.campaign.id, title: GENERAL_WORK, status: 'in_progress', position: last + 1000,
+        description: 'Time spent on the project as a whole rather than one task (briefings, QA, jumping between parts). The project timer logs here.',
+      });
+      if (!page.tasks.some(t => t.id === task.id)) page.tasks.push(task);
+      drawTasks(page);
+    } catch (error) {
+      toast(errorMessage(error), 'error');
+      return;
+    }
+  }
+  startTimer({ campaign_id: page.campaign.id, task_id: task.id });
 }
 
 // Adding tasks ----------------------------------------------------------------

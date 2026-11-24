@@ -131,6 +131,7 @@ const SECTIONS = [
       <ul>
         <li>A <strong>template</strong> is a ready-made project to copy, such as a clinic onboarding or a monthly payments control. Find them under <strong>Projects → Templates</strong>.</li>
         <li>To use one: <strong>New project</strong> → <strong>Start from</strong> → pick the template, or open the template and click <strong>Use this template</strong>. Give the project its name, start date and owner. Its sections, tasks, subtasks and fields are copied; task due dates move with your start date (a task due on day 10 of the template is due on day 10 of yours), and every task starts as To do. Who can see it comes from the template.</li>
+        <li><strong>Duplicate</strong> (at the top of a task's side panel) makes a copy of the task with its subtasks, description, assignee and fields, all as To do, just after the original: handy for the next newsletter edition or a new master to onboard. Pick a new due date and the subtasks' dates move with it. Comments, files and time aren't copied.</li>
         <li><strong>Roles:</strong> in a template, a task can have a <strong>Role</strong> (in its side panel), such as Account manager or Coach; its subtasks follow it. When you start a project from that template, a <strong>Roles</strong> box asks who plays each role, and every task with that role is assigned to them. Leave a role on <em>As in the template</em> to keep the template's usual person. In a template's List, each task shows its role next to its assignee.</li>
         <li>To make one: <strong>New template</strong> on the Projects page, or <strong>Save as template</strong> on any project (it copies the project; the project itself doesn't change).</li>
         <li>Templates never appear in My tasks or Dashboards, send no notifications, and can't have time logged on them. Edit a template like any project; projects already made from it don't change.</li>
@@ -179,7 +180,7 @@ const SECTIONS = [
         <tbody>
           <tr><td>Weekly grid</td><td><a href="#/my-time">My time</a></td><td>Filling in the week in one go</td></tr>
           <tr><td>Add time</td><td>My time, or <strong>Add time</strong> in a task's panel</td><td>One entry with a note</td></tr>
-          <tr><td>Timer</td><td><strong>▶ Start timer</strong> in a task's panel or on My time</td><td>Timing work as you do it</td></tr>
+          <tr><td>Timer</td><td><strong>▶ Start timer</strong> in a task's panel or on My time, or under a project's hours for the project as a whole (it logs on the project's <em>General work</em> task)</td><td>Timing work as you do it, also when you jump between parts of a project</td></tr>
         </tbody>
       </table></div>
       <h3>Weekly grid</h3>

@@ -1,11 +1,11 @@
 import { supabase } from '../supabase.js';
-import { state } from '../state.js';
+import { state, canEditWork } from '../state.js';
 import { onTasksChanged, onLiveChange } from '../realtime.js';
-import { createTask, updateTask, deleteTask, byPosition, loadSections } from '../tasks.js';
+import { createTask, updateTask, deleteTask, byPosition, loadSections, isoDate } from '../tasks.js';
 import { loadFields, loadTaskValues, saveValue, fieldInput, readFieldInput } from '../fields.js';
 import { loadTasksHours } from '../time.js';
 import { startTimer } from '../timer.js';
-import { esc, options, fmtHours, toast, errorMessage, confirmDialog, TASK_STATUSES } from '../ui.js';
+import { esc, options, fmtHours, toast, errorMessage, confirmDialog, formDialog, TASK_STATUSES } from '../ui.js';
 import { forTag } from '../departments.js';
 import { loadAccess, projectAudience } from '../access.js';
 import { setMentionAudience } from '../comments.js';
@@ -132,6 +132,7 @@ function render() {
       </a>
       <div class="panel-actions">
         <button class="btn btn-small btn-ghost" type="button" data-copy-link title="Copy a link to this task">Copy link</button>
+        ${canEditWork() && !task.parent_id ? '<button class="btn btn-small btn-ghost" type="button" data-duplicate title="Make a copy of this task and its subtasks, for example for the next edition">Duplicate</button>' : ''}
         <button class="btn btn-small btn-danger-outline" type="button" data-delete>Delete</button>
         <button class="icon-btn" type="button" data-close aria-label="Close">×</button>
       </div>
@@ -188,6 +189,7 @@ function render() {
   panel.querySelector('[data-close]').addEventListener('click', closeTaskPanel);
   panel.querySelector('[data-delete]').addEventListener('click', removeTask);
   panel.querySelector('[data-copy-link]').addEventListener('click', () => copyTaskLink(task));
+  panel.querySelector('[data-duplicate]')?.addEventListener('click', duplicateTask);
   panel.querySelectorAll('[data-field]').forEach(input => input.addEventListener('change', () => saveField(input)));
   panel.querySelector('[data-add-subtask]').addEventListener('submit', addSubtask);
   panel.querySelector('[data-custom-fields]').addEventListener('change', event => saveCustomField(event.target));
@@ -421,6 +423,57 @@ async function removeSubtask(id) {
   } catch (error) {
     toast(errorMessage(error), 'error');
   }
+}
+
+// A copy of this task: same project, section, assignee, description, role
+// and fields, plus its subtasks, all as To do, placed just after it. A new
+// due date moves the subtasks' dates by the same number of days. Comments,
+// files and time stay with the original.
+const shiftDate = (iso, days) => {
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  return isoDate(new Date(y, m - 1, d + days));
+};
+
+function duplicateTask() {
+  const { task, subtasks, values } = current;
+  const subs = subtasks.length;
+  formDialog({
+    title: 'Duplicate task',
+    submitLabel: 'Duplicate',
+    body: `
+      <label class="field"><span>Title</span>
+        <input name="title" required maxlength="300" value="${esc(task.title)}"></label>
+      <label class="field"><span>Due date</span>
+        <input type="date" name="due" value="${esc(task.due_date || '')}"></label>
+      <p class="muted small form-note">Copies its description, section, assignee and fields${subs ? `, and its ${subs} subtask${subs === 1 ? '' : 's'}` : ''}, all as To do.${task.due_date && subs ? ' Subtask dates move by as many days as the due date.' : ''} Comments, files and time aren't copied.</p>`,
+    onSubmit: async form => {
+      const title = form.elements.title.value.trim();
+      if (!title) return 'Give the copy a title.';
+      const due = form.elements.due.value || null;
+      const days = task.due_date && due ? Math.round((new Date(due) - new Date(task.due_date)) / 86400000) : 0;
+      let copy;
+      try {
+        copy = await createTask({
+          campaign_id: task.campaign_id, section_id: task.section_id, title, description: task.description,
+          assignee_id: task.assignee_id, due_date: due, status: 'todo', position: Number(task.position) + 1,
+          template_role: task.template_role ?? null,
+        });
+        for (const s of subtasks) {
+          await createTask({
+            campaign_id: task.campaign_id, parent_id: copy.id, title: s.title, description: s.description,
+            assignee_id: s.assignee_id, due_date: shiftDate(s.due_date, days), status: 'todo', position: s.position,
+            template_role: s.template_role ?? null,
+          });
+        }
+        for (const [fieldId, value] of Object.entries(values || {})) await saveValue(copy.id, fieldId, value);
+      } catch (error) {
+        return copy ? `The task was copied, but not completely: ${errorMessage(error)}` : errorMessage(error);
+      }
+      toast(`Duplicated: ${title}`, 'success');
+      openTaskPanel(copy.id);
+    },
+  });
 }
 
 async function removeTask() {
