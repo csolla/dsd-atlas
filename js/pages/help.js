@@ -42,11 +42,11 @@ const SECTIONS = [
     id: 'todos',
     title: 'My to-dos: your own list',
     html: `
-      <p><a href="#/todos">My to-dos</a> is the first page you see when you open Atlas. Click the <strong>DSD Atlas</strong> logo at the top left to come back to it from anywhere.</p>
+      <p>Your to-dos are in the <strong>My to-dos</strong> box at the top of <a href="#/my-tasks">My tasks</a>, the first page you see when you open Atlas. Click the <strong>DSD Atlas</strong> logo at the top left to come back to it from anywhere. Type in <strong>Add a to-do</strong> and press Enter (a due date is optional); tick a to-do to mark it done.</p>
       <ul>
         <li>It's your own list for the small things that don't belong in a team project: calls to make, things to check, reminders. <strong>Only you can see it</strong>, not even Admins.</li>
-        <li>Everything you add here is assigned to you automatically, so your to-dos also show in <a href="#/my-tasks">My tasks</a> with the rest of your work.</li>
-        <li>It works like a project: add a task and press Enter, add subtasks, due dates, notes and files, switch between List, Kanban, Board and Calendar, and log time on it.</li>
+        <li>Everything you add is assigned to you automatically. Your to-dos stay in their box; the tasks under <strong>From projects</strong> are the ones from team projects.</li>
+        <li>Click a to-do to open it: add a due date, notes, files or subtasks, and log time on it.</li>
         <li>Nobody else can be added to it, and it doesn't show in Projects or Dashboards. To others, hours logged on it show as "Private project".</li>
       </ul>`,
   },
@@ -54,7 +54,7 @@ const SECTIONS = [
     id: 'my-tasks',
     title: 'Your daily routine: My tasks',
     html: `
-      <p>Check <a href="#/my-tasks">My tasks</a> each day. It lists every task and subtask assigned to you, across all projects, grouped by due date.</p>
+      <p>Start each day on <a href="#/my-tasks">My tasks</a>. Under your to-dos, <strong>From projects</strong> lists every task and subtask assigned to you, across all projects, grouped by due date.</p>
       <div class="table-wrap"><table class="table">
         <thead><tr><th>Group</th><th>What's in it</th></tr></thead>
         <tbody>

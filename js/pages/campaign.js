@@ -60,6 +60,12 @@ export async function renderCampaign(el, id, openTask = null) {
     return;
   }
 
+  // Personal to-dos only live in the box on My tasks (a list is all they need)
+  if (campaign.personal_of) {
+    window.location.hash = '#/my-tasks';
+    return;
+  }
+
   memory[id] ||= { q: '', person: '', section: '', assignee: '', due: '', showAllDone: false, details: false };
   const page = {
     el, campaign, tasks: tasksResult.value, sections: sectionsResult.value,
@@ -73,7 +79,7 @@ export async function renderCampaign(el, id, openTask = null) {
   const team = projectAudience(campaign, access);
 
   el.innerHTML = `
-    ${personal ? '' : '<a class="back-link" href="#/campaigns">← Projects</a>'}
+    ${personal ? '<a class="back-link" href="#/my-tasks">← My tasks</a>' : '<a class="back-link" href="#/campaigns">← Projects</a>'}
     <section class="card campaign-summary">
       <div class="summary-top">
         <div class="summary-title">

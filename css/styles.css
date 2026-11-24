@@ -593,6 +593,15 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 
 .toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 550; cursor: pointer; white-space: nowrap; }
 .due-group { margin-bottom: 24px; }
+/* My tasks: your own to-dos in a box at the top */
+.todo-box { display: grid; gap: 12px; margin-bottom: 28px; }
+.todo-box-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.todo-box-head h2 { margin: 0; font-size: 17px; }
+.todo-add { display: flex; flex-wrap: wrap; gap: 8px; }
+.todo-add .quick-title { flex: 1 1 240px; min-width: 0; }
+.todo-list { box-shadow: none; }
+.todo-empty { padding: 12px 14px; color: var(--muted); }
+.from-projects-title { font-size: 17px; margin: 0 0 12px; }
 .due-group h2 { font-size: 15px; margin-bottom: 8px; }
 .due-group-overdue h2 { color: var(--danger); }
 .my-task-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
