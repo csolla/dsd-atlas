@@ -17,7 +17,10 @@ with owners(asana_name, email) as (values
   ('Elisa Bedin', 'ebedin@digitalsmiledesign.com'),
   ('Valeria Evangelista', 'vevangelista@digitalsmiledesign.com'),
   ('John Coachman', 'john@digitalsmiledesign.com'),
-  ('Daisy Mason', 'dmason@digitalsmiledesign.com')
+  ('Daisy Mason', 'dmason@digitalsmiledesign.com'),
+  ('Stephanie Wrennall', 'swrennall@digitalsmiledesign.com'),
+  ('Ángel L. Sánchez Caleya', 'angel@digitalsmiledesign.com'),
+  ('Elisabet López San Juan', 'elopez@digitalsmiledesign.com')
 ),
 matches as (
   select t.id as task_id, p.id as person_id
