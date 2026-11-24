@@ -709,6 +709,15 @@ function drawList(page, container, main, subtasksOf) {
     </tr>` : '');
   const firstSection = groups.findIndex(g => g.id);
   const columns = 5 + page.fields.length;
+  // A Total row under each section (and one for all of them) once the project
+  // has a number or money field; refreshTotals() fills the amounts
+  const summed = page.fields.some(f => SUMMED.includes(f.type));
+  const totalRow = (label, cls = '') => `
+    <tr class="task-section-total ${cls}" data-placeholder>
+      <td></td><td colspan="4">${esc(label)}</td>
+      ${page.fields.map(f => `<td class="num field-total" ${SUMMED.includes(f.type) ? `data-total="${esc(f.id)}"` : ''}></td>`).join('')}
+    </tr>`;
+  const withTasks = groups.filter(g => g.tasks.length).length;
 
   container.innerHTML = `
     <div class="table-wrap">
@@ -720,6 +729,7 @@ function drawList(page, container, main, subtasksOf) {
           <tbody data-group="${esc(g.id)}">
             ${head(g, i)}
             ${g.tasks.map(row).join('')}
+            ${summed && g.tasks.length ? totalRow(sections.length ? `Total · ${g.name}` : 'Total') : ''}
             ${!g.tasks.length ? `<tr class="task-section-empty" data-placeholder><td colspan="${columns}" class="muted small">${sections.length ? 'No tasks in this section yet.' : 'No tasks yet.'}${edit && sections.length ? ' Drag one here or add one below.' : ''}</td></tr>` : ''}
             ${edit && sections.length && !page.campaign.archived_at ? `
               <tr class="task-section-add" data-placeholder><td colspan="${columns}">
@@ -729,6 +739,7 @@ function drawList(page, container, main, subtasksOf) {
                 </form>
               </td></tr>` : ''}
           </tbody>`).join('')}
+        ${summed && sections.length && withTasks > 1 ? `<tfoot data-all-totals>${totalRow('Total · All sections', 'is-grand')}</tfoot>` : ''}
       </table>
     </div>
     ${edit && !filtering ? '<button class="btn btn-small task-section-new" type="button" data-section-new>+ Add section</button>' : ''}`;
@@ -764,6 +775,7 @@ function drawList(page, container, main, subtasksOf) {
     }
   });
   container.querySelector('[data-section-new]')?.addEventListener('click', () => openSectionForm(page, null));
+  refreshTotals(page, container);
 
   // Fields filled right in the List
   const table = container.querySelector('.task-table');
@@ -792,6 +804,45 @@ function drawList(page, container, main, subtasksOf) {
   });
 }
 
+// Totals ----------------------------------------------------------------------
+
+// Number and money fields add up per section. Money is added per currency and
+// never converted: "€ 25,000.00" and "US$ 5,000.00" on separate lines.
+const SUMMED = ['number', 'money'];
+const round2 = n => Math.round(n * 100) / 100;
+
+function fieldTotal(page, field, taskIds) {
+  const values = taskIds.map(id => page.values[id]?.[field.id]).filter(v => v != null);
+  if (field.type === 'number') {
+    const numbers = values.map(Number).filter(Number.isFinite);
+    return numbers.length ? esc(formatValue(field, round2(numbers.reduce((a, b) => a + b, 0)))) : '';
+  }
+  const byCurrency = new Map();
+  values.forEach(v => {
+    const amount = Number(v.amount);
+    if (!Number.isFinite(amount)) return;
+    const currency = v.currency || '';
+    byCurrency.set(currency, (byCurrency.get(currency) || 0) + amount);
+  });
+  return [...byCurrency]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, amount]) => `<span class="total-line">${esc(formatValue(field, { amount: round2(amount), currency: currency || null }))}</span>`)
+    .join('');
+}
+
+// Fill (or refill) every Total row from the tasks shown above it
+function refreshTotals(page, container) {
+  if (!container) return;
+  const idsIn = el => [...el.querySelectorAll('tr[data-id]')].map(tr => tr.dataset.id);
+  const fill = (row, ids) => row?.querySelectorAll('[data-total]').forEach(cell => {
+    const field = page.fields.find(f => f.id === cell.dataset.total);
+    cell.innerHTML = field ? fieldTotal(page, field, ids) : '';
+  });
+  container.querySelectorAll('tbody[data-group]').forEach(body => fill(body.querySelector('.task-section-total'), idsIn(body)));
+  const table = container.querySelector('.task-table');
+  if (table) fill(container.querySelector('[data-all-totals] .task-section-total'), idsIn(table));
+}
+
 // Saves a field changed in a List cell
 async function saveListField(page, target) {
   const el = target.closest('[data-field-id]') || target.closest('.money-input')?.querySelector('[data-field-id]');
@@ -808,6 +859,7 @@ async function saveListField(page, target) {
   const before = values[field.id];
   if (value == null || (Array.isArray(value) && !value.length)) delete values[field.id];
   else values[field.id] = value;
+  if (SUMMED.includes(field.type)) refreshTotals(page, page.el.querySelector('[data-tasks]'));
   if (field.type === 'multi') {
     el.querySelector('summary').innerHTML = value?.length ? esc(value.join(', ')) : '<span class="muted">—</span>';
   }
