@@ -681,7 +681,7 @@ function drawList(page, container, main, subtasksOf) {
       <tr data-id="${esc(task.id)}" class="clickable ${task.status === 'done' ? 'is-done' : ''}">
         <td class="tick-col"><input type="checkbox" data-done ${task.status === 'done' ? 'checked' : ''} aria-label="Done"></td>
         <td><span class="task-title">${esc(task.title)}</span> ${subtaskCount(subtasksOf(task.id))} ${activityCounts(page, task.id)}</td>
-        <td>${assignee ? `<span class="person">${avatar(assignee, 24)}${esc(assignee.name)}</span>` : `<span class="person">${assigneeBadge(task)}<span class="muted">Unassigned</span></span>`}</td>
+        <td>${assignee ? `<span class="person">${avatar(assignee, 24)}${esc(assignee.name)}</span>` : `<span class="person">${assigneeBadge(task)}<span class="muted">Unassigned</span></span>`}${page.campaign.is_template && task.template_role ? ` <span class="tag role-tag" title="Role: in a project made from this template, this goes to the person picked for it">${esc(task.template_role)}</span>` : ''}</td>
         <td class="nowrap">${dueLabel(task) || '<span class="muted">—</span>'}</td>
         <td><select data-status aria-label="Status">${options(TASK_STATUSES, task.status)}</select></td>
         ${page.fields.map(f => {

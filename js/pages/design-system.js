@@ -164,6 +164,7 @@ export function renderDesignSystem(el) {
     ${section('task-sections', 'Task sections', 'Group a project\'s tasks into phases in the List view.', [
       'A header row per section (<code>.task-section-row</code>) with its name, task count and, for editors, ↑ ↓, Rename and Delete.',
       'Each section ends with its own <strong>+ Add task</strong>; an empty section says so.',
+      'In a template, the role of a task shows as a <code>.tag.role-tag</code> next to its assignee; the New project form asks who plays each role in a <code>.template-roles</code> box.',
       'Once the project has a number or money field, each section with tasks gets a <code>.task-section-total</code> row (and a <code>.is-grand</code> one for all sections). Money totals are per currency, one <code>.total-line</code> each, never converted.',
       'Projects have four views in one <code>.view-switch</code>: List, Kanban (status columns), Board (section columns) and Calendar (<code>.cal</code>: a month grid, each task as a <code>.cal-task</code> on its due date; late tasks say "Late" as well as turning red; on phones it becomes a list of the days that have tasks). On the Board, each card shows its status as a <code>.card-status</code> label.',
     ], `

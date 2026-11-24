@@ -329,6 +329,37 @@ function setUpPicker(dialog, name, placeholder, items, startIds) {
   draw();
 }
 
+// A template's roles, each with a person picker. Left on "As in the
+// template", a role's tasks keep the template's usual person.
+async function showRoles(box, templateId) {
+  box.hidden = true;
+  box.innerHTML = '';
+  if (!templateId) return;
+  const { data, error } = await supabase.from('tasks').select('template_role, assignee_id')
+    .eq('campaign_id', templateId).not('template_role', 'is', null);
+  if (error || !data.length || box.closest('form')?.elements.template_id.value !== templateId) return;
+  const usual = {};
+  data.forEach(t => {
+    const counts = (usual[t.template_role] ||= {});
+    if (t.assignee_id) counts[t.assignee_id] = (counts[t.assignee_id] || 0) + 1;
+  });
+  const people = state.people.filter(p => p.active && p.role !== 'director').sort((a, b) => a.name.localeCompare(b.name));
+  const roles = Object.keys(usual).sort((a, b) => a.localeCompare(b));
+  box.innerHTML = `
+    <legend>Roles</legend>
+    <p class="muted small">Every task with a role goes to the person you pick for it.</p>
+    ${roles.map(role => {
+      const [top] = Object.entries(usual[role]).sort((a, b) => b[1] - a[1]);
+      const name = top ? personById(top[0])?.name : null;
+      return `<label class="field"><span>${esc(role)}</span>
+        <select data-role="${esc(role)}">
+          <option value="">As in the template${name ? ` (${esc(name)})` : ' (unassigned)'}</option>
+          ${options(Object.fromEntries(people.map(p => [p.id, p.name])), '')}
+        </select></label>`;
+    }).join('')}`;
+  box.hidden = false;
+}
+
 // Templates people can start a project from
 async function loadTemplates() {
   const { data, error } = await supabase.from('campaigns')
@@ -357,7 +388,8 @@ export async function openCampaignForm(campaign, onSaved, { asTemplate = false, 
           <option value="">A blank project</option>
           ${templates.map(t => `<option value="${esc(t.id)}" ${t.id === templateId ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}
         </select></label>
-      <p class="muted small form-note" data-template-help hidden>Its sections, tasks, subtasks and fields are copied. Task dates move with the start date you choose, and every task starts as To do.</p>` : '';
+      <p class="muted small form-note" data-template-help hidden>Its sections, tasks, subtasks and fields are copied. Task dates move with the start date you choose, and every task starts as To do.</p>
+      <fieldset class="field template-roles" data-template-roles hidden></fieldset>` : '';
   const marketing = departmentByKey('marketing');
   const defaultDept = state.me.department_id || marketing?.id;
   const c = campaign || {
@@ -459,6 +491,9 @@ export async function openCampaignForm(campaign, onSaved, { asTemplate = false, 
       const fromTemplate = !campaign && f.template_id;
       if (fromTemplate) {
         delete values.private;
+        // The person picked for each role gets that role's tasks
+        values.roles = Object.fromEntries([...form.querySelectorAll('[data-role]')]
+          .filter(select => select.value).map(select => [select.dataset.role, select.value]));
         const { data: newId, error } = await supabase.rpc('copy_project', { p_source: f.template_id, p_values: values, p_as_template: false });
         if (error) return errorMessage(error);
         toast('Project created from the template');
@@ -510,8 +545,13 @@ export async function openCampaignForm(campaign, onSaved, { asTemplate = false, 
   // Picking a template fills in its details; the name, dates and owner stay yours
   const templateSelect = dialog.querySelector('[name=template_id]');
   if (templateSelect) {
+    let rolesFor = null;
     const applyTemplate = () => {
       const t = templates.find(x => x.id === templateSelect.value);
+      if ((t?.id || null) !== rolesFor) {
+        rolesFor = t?.id || null;
+        showRoles(dialog.querySelector('[data-template-roles]'), rolesFor);
+      }
       dialog.querySelector('[data-template-help]').hidden = !t;
       dialog.querySelector('[data-privacy]').hidden = Boolean(t);
       dialog.querySelector('[data-privacy-from-template]').hidden = !t;

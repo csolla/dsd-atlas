@@ -131,6 +131,7 @@ const SECTIONS = [
       <ul>
         <li>A <strong>template</strong> is a ready-made project to copy, such as a clinic onboarding or a monthly payments control. Find them under <strong>Projects → Templates</strong>.</li>
         <li>To use one: <strong>New project</strong> → <strong>Start from</strong> → pick the template, or open the template and click <strong>Use this template</strong>. Give the project its name, start date and owner. Its sections, tasks, subtasks and fields are copied; task due dates move with your start date (a task due on day 10 of the template is due on day 10 of yours), and every task starts as To do. Who can see it comes from the template.</li>
+        <li><strong>Roles:</strong> in a template, a task can have a <strong>Role</strong> (in its side panel), such as Account manager or Coach; its subtasks follow it. When you start a project from that template, a <strong>Roles</strong> box asks who plays each role, and every task with that role is assigned to them. Leave a role on <em>As in the template</em> to keep the template's usual person. In a template's List, each task shows its role next to its assignee.</li>
         <li>To make one: <strong>New template</strong> on the Projects page, or <strong>Save as template</strong> on any project (it copies the project; the project itself doesn't change).</li>
         <li>Templates never appear in My tasks or Dashboards, send no notifications, and can't have time logged on them. Edit a template like any project; projects already made from it don't change.</li>
       </ul>`,

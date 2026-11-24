@@ -82,6 +82,14 @@ document.addEventListener('keydown', event => {
 });
 window.addEventListener('hashchange', closeTaskPanel);
 
+// The roles used in a template's tasks, A to Z
+export async function templateRoles(campaignId) {
+  const { data, error } = await supabase.from('tasks').select('template_role')
+    .eq('campaign_id', campaignId).not('template_role', 'is', null);
+  if (error) throw error;
+  return [...new Set(data.map(t => t.template_role))].sort((a, b) => a.localeCompare(b));
+}
+
 async function loadTask(taskId) {
   const { data: task, error } = await supabase
     .from('tasks').select('*, campaign:campaigns(id, name, budget, department_id, for_department_id, archived_at, private, owner_id, created_by, is_template, personal_of)').eq('id', taskId).maybeSingle();
@@ -97,7 +105,9 @@ async function loadTask(taskId) {
     loadFields(task.campaign_id).catch(() => []),
     loadTaskValues(task.id).catch(() => ({})),
   ]);
-  return { task, subtasks: subtasks.sort(byPosition), access, sections, fields, values };
+  // In a template: the roles already used, to suggest them
+  const roles = task.campaign.is_template ? await templateRoles(task.campaign_id).catch(() => []) : [];
+  return { task, subtasks: subtasks.sort(byPosition), access, sections, fields, values, roles };
 }
 
 // People who can be assigned work (on a private project, only those who
@@ -137,6 +147,9 @@ function render() {
           <input type="date" data-field="due_date"></label>
         <label class="field" data-section-field hidden><span>Section</span>
           <select data-field="section_id"></select></label>
+        ${task.campaign.is_template ? `<label class="field" title="Who does this task in each project made from the template: pick the person for each role when creating the project"><span>Role</span>
+          <input data-field="template_role" list="template-role-options" maxlength="60" placeholder="${task.parent_id ? 'Same as its main task' : 'For example: Account manager'}">
+          <datalist id="template-role-options">${(current.roles || []).map(r => `<option value="${esc(r)}"></option>`).join('')}</datalist></label>` : ''}
       </div>
       <section class="custom-fields" data-custom-fields hidden></section>
       <label class="field"><span>Description</span>
@@ -334,7 +347,7 @@ async function saveField(input) {
       input.value = current.task.title;
       return;
     }
-  } else if (field === 'description') {
+  } else if (field === 'description' || field === 'template_role') {
     value = value.trim() || null;
   } else if (field === 'assignee_id' || field === 'due_date' || field === 'section_id') {
     value = value || null;
