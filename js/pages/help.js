@@ -131,7 +131,7 @@ const SECTIONS = [
         <li>Type in the <strong>Search</strong> box at the top (on a phone, tap the magnifying glass). Press <strong>/</strong> anywhere to jump to it.</li>
         <li><strong>Find someone's tasks:</strong> type their name and pick them under <strong>People</strong>. You'll see every task and subtask assigned to them across the projects you can see, grouped by project, soonest due first. Done tasks are hidden until you tick <strong>Show done tasks</strong>; archived projects are left out.</li>
         <li>After two letters, a list suggests matching people, projects and tasks. Click one, or use ↑ ↓ and Enter, to open it. <strong>Search everything</strong> at the bottom, or Enter with nothing picked, opens the full results. Esc closes the list.</li>
-        <li>It finds projects (by name or description), sections, tasks and subtasks (by title or description) and comments, across every project you can see, including archived ones. The words you typed are highlighted.</li>
+        <li>It finds projects (by name or description), sections, tasks and subtasks (by title or description) and comments, across every project you can see, including archived ones. Each word is matched on its own, in any order, so <em>black friday email</em> finds “Email – Black Friday”; more words narrow the results down. The words you typed are highlighted. The <strong>Find a task</strong> box inside a project works the same way.</li>
         <li>On the Search page, results update as you type. Click a result to open it; a task opens in its project with its side panel open.</li>
         <li>Private projects only show up for the people who can see them.</li>
         <li>It shows up to 30 of each kind. If you don't see what you need, add more words.</li>

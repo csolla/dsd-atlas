@@ -14,6 +14,26 @@ function containsPattern(q) {
   return `%${q.replace(/[\\%_]/g, '\\$&')}%`;
 }
 
+// The words typed, each matched on its own and in any order: "black friday
+// email" finds "Email – Black Friday". One-letter words are left out unless
+// that's all there is.
+export function searchWords(q) {
+  const all = String(q ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const long = all.filter(word => word.length >= MIN_LENGTH);
+  return [...new Set(long.length ? long : all)].slice(0, 8);
+}
+
+// Every word somewhere in the column
+function allWords(query, column, words) {
+  return words.reduce((built, word) => built.ilike(column, containsPattern(word)), query);
+}
+
+// True when every word is in one of the texts (for lists already loaded)
+export function hasAllWords(texts, q) {
+  const haystack = texts.map(t => String(t ?? '').toLowerCase()).join(' \n ');
+  return searchWords(q).every(word => haystack.includes(word));
+}
+
 async function rows(query) {
   const { data, error } = await query;
   if (error) throw error;
@@ -31,17 +51,16 @@ const TASK = `id, title, description, status, due_date, assignee_id, parent_id, 
   campaign:campaigns(${PROJECT}), parent:parent_id(id, title)`;
 
 export async function searchEverything(q) {
-  const words = q.trim();
-  if (words.length < MIN_LENGTH) return { projects: [], sections: [], tasks: [], comments: [] };
-  const like = containsPattern(words);
+  if (q.trim().length < MIN_LENGTH) return { projects: [], sections: [], tasks: [], comments: [] };
+  const words = searchWords(q);
   const [projectNames, projectDescriptions, sections, taskTitles, taskDescriptions, comments] = await Promise.all([
-    rows(supabase.from('campaigns').select(`${PROJECT}, description`).ilike('name', like).order('created_at', { ascending: false }).limit(LIMIT)),
-    rows(supabase.from('campaigns').select(`${PROJECT}, description`).ilike('description', like).order('created_at', { ascending: false }).limit(LIMIT)),
-    rows(supabase.from('sections').select(`id, name, campaign_id, campaign:campaigns(${PROJECT})`).ilike('name', like).limit(LIMIT)),
-    rows(supabase.from('tasks').select(TASK).ilike('title', like).order('updated_at', { ascending: false }).limit(LIMIT)),
-    rows(supabase.from('tasks').select(TASK).ilike('description', like).order('updated_at', { ascending: false }).limit(LIMIT)),
-    rows(supabase.from('comments').select(`id, body, created_at, author_id, task_id,
-      task:tasks(id, title, parent_id, campaign_id, campaign:campaigns(${PROJECT}))`).ilike('body', like).order('created_at', { ascending: false }).limit(LIMIT)),
+    rows(allWords(supabase.from('campaigns').select(`${PROJECT}, description`), 'name', words).order('created_at', { ascending: false }).limit(LIMIT)),
+    rows(allWords(supabase.from('campaigns').select(`${PROJECT}, description`), 'description', words).order('created_at', { ascending: false }).limit(LIMIT)),
+    rows(allWords(supabase.from('sections').select(`id, name, campaign_id, campaign:campaigns(${PROJECT})`), 'name', words).limit(LIMIT)),
+    rows(allWords(supabase.from('tasks').select(TASK), 'title', words).order('updated_at', { ascending: false }).limit(LIMIT)),
+    rows(allWords(supabase.from('tasks').select(TASK), 'description', words).order('updated_at', { ascending: false }).limit(LIMIT)),
+    rows(allWords(supabase.from('comments').select(`id, body, created_at, author_id, task_id,
+      task:tasks(id, title, parent_id, campaign_id, campaign:campaigns(${PROJECT}))`), 'body', words).order('created_at', { ascending: false }).limit(LIMIT)),
   ]);
   return {
     projects: unique([projectNames, projectDescriptions]),
@@ -51,18 +70,22 @@ export async function searchEverything(q) {
   };
 }
 
-// The text, escaped, with every match of the words marked
+// Any of the words, longest first, ignoring case
+function wordsPattern(q) {
+  const words = searchWords(q).sort((a, b) => b.length - a.length);
+  return words.length ? new RegExp(words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi') : null;
+}
+
+// The text, escaped, with every match of each word marked
 export function highlight(text, q) {
   const value = String(text ?? '');
-  const words = q.trim();
-  if (!words) return esc(value);
-  const lower = value.toLowerCase();
-  const needle = words.toLowerCase();
+  const pattern = wordsPattern(q);
+  if (!pattern) return esc(value);
   let out = '';
   let from = 0;
-  for (let at = lower.indexOf(needle); at !== -1; at = lower.indexOf(needle, from)) {
-    out += `${esc(value.slice(from, at))}<mark>${esc(value.slice(at, at + needle.length))}</mark>`;
-    from = at + needle.length;
+  for (const match of value.matchAll(pattern)) {
+    out += `${esc(value.slice(from, match.index))}<mark>${esc(match[0])}</mark>`;
+    from = match.index + match[0].length;
   }
   return out + esc(value.slice(from));
 }
@@ -70,22 +93,23 @@ export function highlight(text, q) {
 // A short piece of a long text around the first match, as plain text
 export function snippet(text, q, around = 70) {
   const value = String(text ?? '').replace(/\s+/g, ' ').trim();
-  const at = value.toLowerCase().indexOf(q.trim().toLowerCase());
+  const first = wordsPattern(q)?.exec(value);
+  const at = first ? first.index : -1;
   if (value.length <= around * 2 || at === -1) return value.length > around * 2 ? `${value.slice(0, around * 2)}…` : value;
   const start = Math.max(0, at - around);
-  const end = Math.min(value.length, at + q.trim().length + around);
+  const end = Math.min(value.length, at + first[0].length + around);
   return `${start > 0 ? '…' : ''}${value.slice(start, end)}${end < value.length ? '…' : ''}`;
 }
 
 // People whose name (or email) contains the words: active people who can be
 // given tasks. The people list is already loaded, so no query is needed.
 export function matchPeople(q, limit = 5) {
-  const lower = q.trim().toLowerCase();
-  if (lower.length < MIN_LENGTH) return [];
-  const starts = p => p.name.toLowerCase().split(/\s+/).some(word => word.startsWith(lower)) ? 0 : 1;
+  if (q.trim().length < MIN_LENGTH) return [];
+  const first = searchWords(q)[0];
+  const starts = p => p.name.toLowerCase().split(/\s+/).some(word => word.startsWith(first)) ? 0 : 1;
   return state.people
     .filter(p => p.active && p.role !== 'director'
-      && (p.name.toLowerCase().includes(lower) || String(p.email || '').toLowerCase().split('@')[0].includes(lower)))
+      && hasAllWords([p.name, String(p.email || '').split('@')[0]], q))
     .sort((a, b) => starts(a) - starts(b) || a.name.localeCompare(b.name))
     .slice(0, limit);
 }
@@ -102,16 +126,15 @@ export async function tasksAssignedTo(personId, { includeDone = false } = {}) {
 // A few quick matches by name for the top bar's suggestions: projects and
 // tasks whose name contains the words, the ones that start with them first
 export async function suggest(q, { projects = 4, tasks = 5 } = {}) {
-  const words = q.trim();
-  if (words.length < MIN_LENGTH) return { projects: [], tasks: [] };
-  const like = containsPattern(words);
+  if (q.trim().length < MIN_LENGTH) return { projects: [], tasks: [] };
+  const words = searchWords(q);
   const [projectRows, taskRows] = await Promise.all([
-    rows(supabase.from('campaigns').select('id, name, private, archived_at, is_template').ilike('name', like)
+    rows(allWords(supabase.from('campaigns').select('id, name, private, archived_at, is_template'), 'name', words)
       .order('archived_at', { ascending: false, nullsFirst: true }).order('created_at', { ascending: false }).limit(20)),
-    rows(supabase.from('tasks').select('id, title, status, parent_id, campaign_id, campaign:campaigns(id, name, private, archived_at, is_template)')
-      .ilike('title', like).order('updated_at', { ascending: false }).limit(20)),
+    rows(allWords(supabase.from('tasks').select('id, title, status, parent_id, campaign_id, campaign:campaigns(id, name, private, archived_at, is_template)'), 'title', words)
+      .order('updated_at', { ascending: false }).limit(20)),
   ]);
-  const lower = words.toLowerCase();
+  const lower = q.trim().toLowerCase();
   // Starts with the words first, then live before archived, then as returned
   const rank = (name, archived) => (String(name).toLowerCase().startsWith(lower) ? 0 : 2) + (archived ? 1 : 0);
   const byRank = (key, archivedOf) => (a, b) => rank(a[key], archivedOf(a)) - rank(b[key], archivedOf(b));

@@ -17,6 +17,7 @@ import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
 import { loadFields, loadProjectValues, formatValue, fieldInput, readFieldInput, saveValue } from '../fields.js';
 import { openFieldsDialog } from '../fields-dialog.js';
+import { hasAllWords } from '../search.js';
 
 const DONE_SHOWN = 10;
 
@@ -246,9 +247,8 @@ async function loadHours(page) {
 // task or any of its subtasks
 function matches(page, task, subtasks) {
   if (page.m.section && (task.section_id || 'none') !== page.m.section) return false;
-  const q = page.m.q.trim().toLowerCase();
   const person = page.m.person === 'me' ? state.me.id : page.m.person;
-  const textOk = !q || [task, ...subtasks].some(t => t.title.toLowerCase().includes(q));
+  const textOk = !page.m.q.trim() || [task, ...subtasks].some(t => hasAllWords([t.title], page.m.q));
   if (!person) return textOk;
   if (person === 'none') return textOk && !task.assignee_id;
   return textOk && [task, ...subtasks].some(t => t.assignee_id === person);
