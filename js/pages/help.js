@@ -47,7 +47,7 @@ const SECTIONS = [
         <li>It's your own list for the small things that don't belong in a team project: calls to make, things to check, reminders. <strong>Only you can see it</strong>, not even Admins.</li>
         <li>Everything you add is assigned to you automatically. Your to-dos stay in their box; the tasks under <strong>From projects</strong> are the ones from team projects.</li>
         <li>Click a to-do to open it: add a due date, notes, files or subtasks, and log time on it.</li>
-        <li>Nobody else can be added to it, and it doesn't show in Projects or Dashboards. To others, hours logged on it show as "Private project".</li>
+        <li>Nobody else can be added to it, and it doesn't show in Projects or Dashboards. Hours logged on to-dos are internal time (Corporate in the reports), never Education or Planning Center; to others they show as "Private project".</li>
       </ul>`,
   },
   {
@@ -196,7 +196,7 @@ const SECTIONS = [
       </ol>
       <h3>Internal time, and projects for both units</h3>
       <ul>
-        <li><strong>Internal</strong> (no project) is for team meetings, admin and training. It counts towards capacity, not against either budget.</li>
+        <li><strong>Internal</strong> (no project) is for team meetings, admin and training. It counts towards capacity, not against either budget. In Team time and Dashboards it shows as <strong>Corporate (internal)</strong>. Hours logged on your to-dos count as internal too.</li>
         <li>On a Marketing project for <strong>Education + Planning Center</strong> you log one entry; it is split 70% Education / 30% Planning Center behind the scenes.</li>
       </ul>
       <h3>Correcting entries</h3>

@@ -16,6 +16,7 @@ export const BUDGETS = {
   planning_center: 'Planning Center',
   shared: 'Education + Planning Center',
   other: 'Other departments',
+  internal: 'Corporate (internal)',
 };
 
 // "For" value meaning both Education and Planning Center (Marketing only)
@@ -44,6 +45,7 @@ export function forLabel(campaign) {
 // Owner department, plus who it's for when that's someone else
 export function departmentLine(campaign) {
   const owner = departmentName(campaign.department_id);
+  if (campaign.budget === 'internal') return owner;
   const ownWork = campaign.budget === 'other' && (!campaign.for_department_id || campaign.for_department_id === campaign.department_id);
   return ownWork ? owner : `${owner} · for ${forLabel(campaign)}`;
 }

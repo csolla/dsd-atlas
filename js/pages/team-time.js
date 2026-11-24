@@ -125,7 +125,7 @@ export async function renderTeamTime(container, { week, onPickPerson }) {
             <th class="num unit-col">Education</th>
             <th class="num unit-col">Planning Center</th>
             <th class="num unit-col">Other departments</th>
-            <th class="num unit-col">Internal</th>
+            <th class="num unit-col" title="Internal time: meetings, admin, training and to-dos">Corporate (internal)</th>
           </tr>
         </thead>
         <tbody>

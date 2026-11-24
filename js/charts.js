@@ -130,7 +130,7 @@ export function trendChart(container, months, { focus = null } = {}) {
       <strong>${esc(d.fullLabel || d.label)}</strong>
       <span><span class="swatch swatch-education"></span>Education ${fmtHours(d.edu)} <span class="muted">(${budgetText(d.eduBudget)})</span></span>
       <span><span class="swatch swatch-planning_center"></span>Planning Center ${fmtHours(d.pc)} <span class="muted">(${budgetText(d.pcBudget)})</span></span>
-      <span class="muted">Internal ${fmtHours(d.internal)}</span>`;
+      <span class="muted">Corporate (internal) ${fmtHours(d.internal)}</span>`;
     tooltip.hidden = false;
     const box = svg.getBoundingClientRect();
     const scale = box.width / W;
@@ -159,7 +159,7 @@ export function trendTable(months) {
     <div class="table-wrap">
       <table class="table">
         <thead><tr><th>Month</th><th class="num">Education</th><th class="num">Education budget</th>
-          <th class="num">Planning Center</th><th class="num">Planning Center budget</th><th class="num">Internal</th></tr></thead>
+          <th class="num">Planning Center</th><th class="num">Planning Center budget</th><th class="num" title="Internal time: meetings, admin, training and to-dos">Corporate (internal)</th></tr></thead>
         <tbody>
           ${months.map(d => `<tr><td>${esc(d.fullLabel || d.label)}</td><td class="num">${fmtHours(d.edu)}</td><td class="num">${b(d.eduBudget)}</td>
             <td class="num">${fmtHours(d.pc)}</td><td class="num">${b(d.pcBudget)}</td><td class="num">${fmtHours(d.internal)}</td></tr>`).join('')}

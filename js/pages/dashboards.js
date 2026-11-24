@@ -442,8 +442,8 @@ function drawBudget(box, data) {
   }));
   box.querySelector('[data-internal]').hidden = Boolean(view.focus);
   box.querySelector('[data-internal]').innerHTML =
-    `<span class="swatch swatch-internal" aria-hidden="true"></span> <strong>Internal</strong> ${fmtHours(marketingInternal(data))}
-     <span class="muted">· meetings, admin and training; counts towards capacity, not against either budget</span>`;
+    `<span class="swatch swatch-internal" aria-hidden="true"></span> <strong>Corporate (internal)</strong> ${fmtHours(marketingInternal(data))}
+     <span class="muted">· meetings, admin, training and to-dos; counts towards capacity, not against either budget</span>`;
 }
 
 function drawTrend(box, data) {
@@ -501,7 +501,7 @@ function drawCapacity(box, data) {
   // With a unit in focus, only that unit's hours are shown per person
   const columns = view.focus === 'education' ? [['edu', 'Education']]
     : view.focus === 'planning_center' ? [['pc', 'Planning Center']]
-      : [['edu', 'Education'], ['pc', 'Planning Center'], ['other', 'Other departments'], ['internal', 'Internal']];
+      : [['edu', 'Education'], ['pc', 'Planning Center'], ['other', 'Other departments'], ['internal', 'Corporate (internal)']];
   const unitHead = columns.map(([, label]) => `<th class="num">${label}</th>`).join('');
   const unitCells = (r, tag = 'td') => columns.map(([key]) => `<${tag} class="num">${fmtHours(r[key])}</${tag}>`).join('');
   container.innerHTML = `
@@ -537,7 +537,7 @@ function drawCapacity(box, data) {
       </table>
     </div>
     <p class="muted small table-note">Working hours are after bank holidays and time off. Productive is ${pct}% of that; the rest covers
-      internal meetings, admin and non-productive time, so Internal hours aren't counted in "Used".</p>`;
+      internal meetings, admin, to-dos and non-productive time, so Corporate (internal) hours aren't counted in "Used".</p>`;
 }
 
 function drawUpcoming(box, data) {
@@ -577,14 +577,14 @@ function exportSheets(data) {
         ['Budget', 'Hours used', 'Budget hours', '% used', 'Status'],
         ...budgetFigures(data).map(u => [u.label, h(u.used), u.budget == null ? '' : h(u.budget),
           u.budget ? Math.round(u.used / u.budget * 100) : '', budgetStatus(u.used, u.budget).label]),
-        ['Internal', h(marketingInternal(data)), '', '', 'Not counted against budgets'],
+        ['Corporate (internal)', h(marketingInternal(data)), '', '', 'Not counted against Education or Planning Center'],
       ],
     },
     {
       name: 'Trend',
       period: `${monthName(data.trendFrom)} – ${monthName(lastMonth)} (selected: ${label})`,
       rows: [
-        ['Month', 'Education hours', 'Education budget', 'Planning Center hours', 'Planning Center budget', 'Internal hours'],
+        ['Month', 'Education hours', 'Education budget', 'Planning Center hours', 'Planning Center budget', 'Corporate (internal) hours'],
         ...trendFigures(data).map(m => [m.fullLabel, h(m.edu), m.eduBudget ?? '', h(m.pc), m.pcBudget ?? '', h(m.internal)]),
       ],
     },
@@ -602,7 +602,7 @@ function exportSheets(data) {
       period: label,
       rows: [
         ['Person', 'Working days', 'Bank holidays', 'Days off', 'Working hours', `Productive hours (${data.settings.productive_pct ?? 80}%)`,
-          'Project hours', '% of productive used', 'Education', 'Planning Center', 'Other departments', 'Internal'],
+          'Project hours', '% of productive used', 'Education', 'Planning Center', 'Other departments', 'Corporate (internal)'],
         ...capacityFigures(data).map(r => [r.person.name, r.available.workDays, r.available.holidayDays, r.available.offDays,
           h(r.available.hours), h(r.productiveHours), h(r.campaign), r.used ?? '', h(r.edu), h(r.pc), h(r.other), h(r.internal)]),
       ],
