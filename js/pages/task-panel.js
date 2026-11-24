@@ -131,6 +131,7 @@ function render() {
         ${forTag(task.campaign)} <span>${esc(task.campaign.name)}</span>
       </a>
       <div class="panel-actions">
+        ${task.asana_url ? `<a class="btn btn-small btn-ghost" href="${esc(task.asana_url)}" target="_blank" rel="noopener" title="This task was imported from Asana: see the original, with its full history">Open in Asana</a>` : ''}
         <button class="btn btn-small btn-ghost" type="button" data-copy-link title="Copy a link to this task">Copy link</button>
         ${canEditWork() && !task.parent_id ? '<button class="btn btn-small btn-ghost" type="button" data-duplicate title="Make a copy of this task and its subtasks, for example for the next edition">Duplicate</button>' : ''}
         <button class="btn btn-small btn-danger-outline" type="button" data-delete>Delete</button>

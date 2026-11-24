@@ -91,7 +91,8 @@ export async function renderCampaign(el, id, openTask = null) {
             ${campaign.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
             ${statusPill(campaign.status)}
             <span>${esc(fmtCompactRange(campaign.start_date, campaign.end_date))}</span>
-            ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}`}
+            ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}
+            ${campaign.asana_url ? `<a href="${esc(campaign.asana_url)}" target="_blank" rel="noopener" title="Imported from Asana: older and finished work stays there">Open in Asana ↗</a>` : ''}`}
           </div>
         </div>
         <div class="summary-stats">
