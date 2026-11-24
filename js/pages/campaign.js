@@ -23,6 +23,16 @@ const DONE_SHOWN = 10;
 // Per campaign, for this visit: filters and the quick-add assignee/date
 const memory = {};
 
+// Projects open in the view this person last picked (List the first time)
+const VIEW_KEY = 'project-view';
+const VIEWS = ['list', 'kanban', 'board'];
+function savedView() {
+  try {
+    const view = localStorage.getItem(VIEW_KEY);
+    return VIEWS.includes(view) ? view : 'list';
+  } catch { return 'list'; }
+}
+
 
 // openTask: a task to open straight away (from a shared task link)
 export async function renderCampaign(el, id, openTask = null) {
@@ -52,7 +62,7 @@ export async function renderCampaign(el, id, openTask = null) {
   memory[id] ||= { q: '', person: '', section: '', assignee: '', due: '', showAllDone: false, details: false };
   const page = {
     el, campaign, tasks: tasksResult.value, sections: sectionsResult.value,
-    fields: fieldsResult.value, values: valuesResult.value, view: memory[id].view || 'kanban', dragging: false, counts: {}, m: memory[id],
+    fields: fieldsResult.value, values: valuesResult.value, view: memory[id].view || savedView(), dragging: false, counts: {}, m: memory[id],
   };
   const owner = personById(campaign.owner_id);
   // On a private project, only people who can see it can be assigned
@@ -157,6 +167,7 @@ export async function renderCampaign(el, id, openTask = null) {
   el.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     page.view = button.dataset.view;
     page.m.view = page.view;
+    try { localStorage.setItem(VIEW_KEY, page.view); } catch { /* not saved; fine */ }
     drawTasks(page);
   }));
 

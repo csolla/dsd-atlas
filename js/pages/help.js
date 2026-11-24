@@ -94,7 +94,7 @@ const SECTIONS = [
       <h3>Add and organise tasks</h3>
       <ol>
         <li>Open the project and type a title in <strong>Add a task and press Enter</strong>. It goes to To do.</li>
-        <li>Every project has three views, switched at the top right of its tasks. It opens on <strong>Kanban</strong>.
+        <li>Every project has three views, switched at the top right of its tasks. It opens on <strong>List</strong> the first time, then on whichever view you used last.
           <ul>
             <li><strong>Kanban</strong>: columns To do, In progress, In review and Done. Drag cards between them, and up or down to reorder.</li>
             <li><strong>Board</strong>: one column per section. Each card shows its status. Drag a card to another column to change its section.</li>
