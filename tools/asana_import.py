@@ -125,6 +125,10 @@ def main():
     tasks = [t for path in sorted(glob.glob(os.path.join(a.folder, 'tasks*.json')))
              for t in json.load(open(path))['data']]
     subtasks = load(a.folder, 'subtasks.json', {})
+    # In Asana a subtask can also be added to the project as its own row.
+    # Atlas keeps it once, as a subtask of its task (Carlota, 25 Nov).
+    sub_gids = {x['gid'] for v in subtasks.values() for x in v}
+    tasks = [t for t in tasks if t['gid'] not in sub_gids]
     comments = load(a.folder, 'comments.json', {})
     attachments = load(a.folder, 'attachments.json', {})
 
@@ -189,6 +193,9 @@ def main():
         for c in t.get('custom_fields', []):
             if c['gid'] not in fields and c.get('display_value'):
                 extra.append(f"{c.get('name') or 'Estimate'} (old Asana field): {c['display_value']}")
+            elif parent_gid and c.get('display_value'):
+                # Subtasks have no field values in Atlas: keep them as text
+                extra.append(f"{c.get('name') or 'Field'}: {c['display_value']}")
         if len(t.get('memberships', [])) > 1:
             extra.append('Also in other Asana projects; it lives here in Atlas.')
         if t.get('resource_subtype') == 'milestone':
