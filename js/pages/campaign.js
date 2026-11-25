@@ -18,6 +18,7 @@ import { openTaskPanel } from './task-panel.js';
 import { loadFields, loadProjectValues, formatValue, formatHtml, choicePill, fieldInput, readFieldInput, saveValue } from '../fields.js';
 import { openFieldsDialog } from '../fields-dialog.js';
 import { openFormsDialog } from '../forms-dialog.js';
+import { openRulesDialog } from '../rules-dialog.js';
 import { hasAllWords } from '../search.js';
 import { startTimer } from '../timer.js';
 
@@ -151,6 +152,7 @@ export async function renderCampaign(el, id, openTask = null) {
         <span class="spacer"></span>
         ${canEditWork() ? '<button class="btn btn-ghost btn-small" type="button" data-fields title="This project\'s own fields, such as an amount or a date">Fields</button>' : ''}
         ${canEditWork() && !campaign.is_template ? '<button class="btn btn-ghost btn-small" type="button" data-forms title="Forms anyone at DSD can send to this project">Forms</button>' : ''}
+        ${canEditWork() && !campaign.is_template ? '<button class="btn btn-ghost btn-small" type="button" data-rules title="Automations: when something happens to a task, Atlas does what you choose">Rules</button>' : ''}
         <div class="view-switch" role="group" aria-label="View">
           <button type="button" data-view="list" title="Tasks grouped by section">List</button>
           <button type="button" data-view="kanban" title="Columns by status: To do, In progress, In review, Done">Kanban</button>
@@ -210,6 +212,7 @@ export async function renderCampaign(el, id, openTask = null) {
   }, { isBusy: () => page.dragging || editingField(page) || page.el.contains(document.activeElement) && document.activeElement.matches('.column-add input') });
 
   el.querySelector('[data-forms]')?.addEventListener('click', () => openFormsDialog(page, team));
+  el.querySelector('[data-rules]')?.addEventListener('click', () => openRulesDialog(page, team));
   el.querySelector('[data-fields]')?.addEventListener('click', () => openFieldsDialog(campaign, {
     countValues: fieldId => Object.values(page.values).filter(v => v[fieldId] !== undefined).length,
     onChanged: fields => { page.fields = fields; drawTasks(page); },

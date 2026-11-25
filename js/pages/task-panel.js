@@ -147,6 +147,7 @@ function render() {
             <span class="project-swatch" aria-hidden="true"></span>
             <a href="#/campaigns/${esc(task.campaign.id)}">${esc(task.campaign.name)}</a>
             <span class="section-pick" data-section-field hidden><select data-field="section_id" aria-label="Section" title="Section"></select></span>
+            ${task.copied_from ? '<span class="muted small copied-from" data-copied-from>Copied by a rule from another project</span>' : ''}
           </div></div>
         <div class="prop-row"><label class="prop-label" for="tp-status">Status</label>
           <div class="prop-value"><select id="tp-status" data-field="status">${options(TASK_STATUSES, task.status)}</select></div></div>
@@ -195,6 +196,14 @@ function render() {
   panel.querySelector('[data-delete]').addEventListener('click', removeTask);
   panel.querySelector('[data-copy-link]').addEventListener('click', () => copyTaskLink(task));
   panel.querySelector('[data-duplicate]')?.addEventListener('click', duplicateTask);
+  // A copy made by a rule links to its original, if you can see it
+  if (task.copied_from) {
+    supabase.from('tasks').select('id, title, campaign_id, campaign:campaigns(name)').eq('id', task.copied_from).maybeSingle()
+      .then(({ data }) => {
+        const box = panel.querySelector('[data-copied-from]');
+        if (data && box) box.innerHTML = `Copied from <a href="#/campaigns/${esc(data.campaign_id)}/tasks/${esc(data.id)}">“${esc(data.title)}” in ${esc(data.campaign?.name || 'another project')}</a>`;
+      });
+  }
   // Mark complete / reopen, like Asana's button: changes the Status box
   panel.querySelector('[data-complete]').addEventListener('click', () => {
     const status = panel.querySelector('[data-field="status"]');

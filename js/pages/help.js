@@ -149,6 +149,20 @@ const SECTIONS = [
       </ul>`,
   },
   {
+    id: 'rules',
+    title: 'Rules: let Atlas do routine work',
+    html: `
+      <p>On a project page, click <strong>Rules</strong> (project editors). A rule says <strong>when</strong> something happens to a task, <strong>only if</strong> some things are true, <strong>then</strong> what Atlas should do.</p>
+      <ul>
+        <li><strong>When:</strong> a task is added (also from a form, and optionally only to one section), moves to a section, a field changes (optionally to one value), the due date changes, a task is completed, or a task is assigned.</li>
+        <li><strong>Only if</strong> (optional): a field has a value (leave it empty for "any value"), the task is in a section, or it came from a certain form.</li>
+        <li><strong>Then</strong>, one or more: assign it, move it to a section, set a field, set the due date (in so many days), set the status, add a comment, add subtasks, move it to a "Week of …" section by a date (the section is made if it doesn't exist), or copy it into another project (the copy links back to the original).</li>
+        <li>Examples: "When a task is added, if Request type is Website → assign to Ángel and move to Web"; "When Payment date changes → move to its Week of … section".</li>
+        <li>Switch a rule <strong>On</strong> or off without deleting it. Rules don't set off other rules, so they can't loop.</li>
+        <li>Built in, no rule needed: a new subtask is assigned to whoever has its main task, and when the main task changes hands, its open subtasks that were with the previous person move too.</li>
+      </ul>`,
+  },
+  {
     id: 'search',
     title: 'Searching everything',
     html: `
