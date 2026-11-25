@@ -139,23 +139,32 @@ function render() {
       </div>
     </header>
     <div class="panel-body">
-      <input class="panel-title" data-field="title" aria-label="Task title" maxlength="300">
-      <div class="panel-fields">
-        <label class="field"><span>Status</span>
-          <select data-field="status">${options(TASK_STATUSES, task.status)}</select></label>
-        <label class="field"><span>Assignee</span>
-          <select data-field="assignee_id"></select></label>
-        <label class="field"><span>Due date</span>
-          <input type="date" data-field="due_date"></label>
-        <label class="field" data-section-field hidden><span>Section</span>
-          <select data-field="section_id"></select></label>
-        ${task.campaign.is_template ? `<label class="field" title="Who does this task in each project made from the template: pick the person for each role when creating the project"><span>Role</span>
-          <input data-field="template_role" list="template-role-options" maxlength="60" placeholder="${task.parent_id ? 'Same as its main task' : 'For example: Account manager'}">
-          <datalist id="template-role-options">${(current.roles || []).map(r => `<option value="${esc(r)}"></option>`).join('')}</datalist></label>` : ''}
+      <div class="panel-complete-row">
+        <button class="btn btn-small complete-btn" type="button" data-complete aria-pressed="false">✓ Mark complete</button>
       </div>
-      <section class="custom-fields" data-custom-fields hidden></section>
-      <label class="field"><span>Description</span>
-        <textarea data-field="description" rows="5" placeholder="Add more detail"></textarea></label>
+      <input class="panel-title" data-field="title" aria-label="Task title" maxlength="300">
+      <div class="panel-props">
+        <div class="prop-row"><label class="prop-label" for="tp-assignee">Assignee</label>
+          <div class="prop-value"><select id="tp-assignee" data-field="assignee_id"></select></div></div>
+        <div class="prop-row"><label class="prop-label" for="tp-due">Due date</label>
+          <div class="prop-value"><input id="tp-due" type="date" data-field="due_date"></div></div>
+        <div class="prop-row"><span class="prop-label">Project</span>
+          <div class="prop-value prop-project">
+            <a href="#/campaigns/${esc(task.campaign.id)}">${esc(task.campaign.name)}</a>
+            <span data-section-field hidden><select data-field="section_id" aria-label="Section"></select></span>
+          </div></div>
+        <div class="prop-row"><label class="prop-label" for="tp-status">Status</label>
+          <div class="prop-value"><select id="tp-status" data-field="status">${options(TASK_STATUSES, task.status)}</select></div></div>
+        ${task.campaign.is_template ? `<div class="prop-row" title="Who does this task in each project made from the template: pick the person for each role when creating the project">
+          <label class="prop-label" for="tp-role">Role</label>
+          <div class="prop-value"><input id="tp-role" data-field="template_role" list="template-role-options" maxlength="60" placeholder="${task.parent_id ? 'Same as its main task' : 'For example: Account manager'}">
+          <datalist id="template-role-options">${(current.roles || []).map(r => `<option value="${esc(r)}"></option>`).join('')}</datalist></div></div>` : ''}
+        <div class="panel-props-fields" data-custom-fields hidden></div>
+      </div>
+      <section class="panel-description">
+        <label class="panel-section-title" for="tp-description">Description</label>
+        <textarea id="tp-description" data-field="description" rows="5" placeholder="What is this task about?"></textarea>
+      </section>
       <section class="time-box" ${task.campaign.is_template ? 'hidden' : ''}>
         <h3>Time</h3>
         <div class="time-box-row">
@@ -191,6 +200,12 @@ function render() {
   panel.querySelector('[data-delete]').addEventListener('click', removeTask);
   panel.querySelector('[data-copy-link]').addEventListener('click', () => copyTaskLink(task));
   panel.querySelector('[data-duplicate]')?.addEventListener('click', duplicateTask);
+  // Mark complete / reopen, like Asana's button: changes the Status box
+  panel.querySelector('[data-complete]').addEventListener('click', () => {
+    const status = panel.querySelector('[data-field="status"]');
+    status.value = current.task.status === 'done' ? 'todo' : 'done';
+    saveField(status);
+  });
   panel.querySelectorAll('[data-field]').forEach(input => input.addEventListener('change', () => saveField(input)));
   panel.querySelector('[data-add-subtask]').addEventListener('submit', addSubtask);
   panel.querySelector('[data-custom-fields]').addEventListener('change', event => saveCustomField(event.target));
@@ -215,6 +230,13 @@ function render() {
 // Put the task's values into the fields, skipping the one being edited
 function fillFields() {
   const { panel, task } = current;
+  const complete = panel.querySelector('[data-complete]');
+  if (complete) {
+    const done = task.status === 'done';
+    complete.setAttribute('aria-pressed', String(done));
+    complete.textContent = done ? '✓ Completed' : '✓ Mark complete';
+    complete.title = done ? 'Done. Click to reopen it' : 'Mark this task as done';
+  }
   panel.querySelectorAll('[data-field]').forEach(input => {
     if (input === document.activeElement) return;
     if (input.dataset.field === 'assignee_id') input.innerHTML = assigneeOptions(task.assignee_id);
@@ -227,18 +249,16 @@ function fillFields() {
 }
 
 // The project's own fields (Fields button on the project page)
+// The project's fields, as label / value rows under the task's details
 function renderCustomFields() {
   const { panel, fields, values } = current;
   const box = panel.querySelector('[data-custom-fields]');
   box.hidden = !fields.length;
-  box.innerHTML = fields.length ? `
-    <h3>Fields</h3>
-    <div class="custom-fields-grid">${fields.map(f => `
-      <div class="field ${['text', 'multi'].includes(f.type) ? 'field-wide' : ''}">
-        <span>${esc(f.name)}</span>
-        ${fieldInput(f, values[f.id])}
-      </div>`).join('')}
-    </div>` : '';
+  box.innerHTML = fields.map(f => `
+    <div class="prop-row ${f.type === 'multi' ? 'prop-row-top' : ''}">
+      <span class="prop-label">${esc(f.name)}</span>
+      <div class="prop-value">${fieldInput(f, values[f.id])}</div>
+    </div>`).join('');
 }
 
 async function saveCustomField(target) {
@@ -361,6 +381,7 @@ async function saveField(input) {
   try {
     const saved = await updateTask(mine.task.id, { [field]: value });
     Object.assign(mine.task, saved, { campaign: mine.task.campaign });
+    if (field === 'status' && current === mine) fillFields();
   } catch (error) {
     toast(errorMessage(error), 'error');
     input.value = mine.task[field] ?? '';
