@@ -12,6 +12,7 @@ import {
   BUSINESS_UNITS, FOR_BOTH, departmentById, departmentByKey, isMarketing, unitLine,
 } from '../departments.js';
 import { loadAccess, saveAccess, canManageAccess, accessSummary } from '../access.js';
+import { isFavourite, starButton, wireStars, onFavouritesChanged } from '../favourites.js';
 
 // Kept between visits so the list looks the same when coming back to it
 const filters = { search: '', dept: '', bu: '', owner: '', view: 'active', mine: false, sort: 'start', dir: 'desc' };
@@ -97,6 +98,8 @@ export async function renderCampaigns(el) {
       draw();
     } catch { /* keep what's shown */ }
   });
+  // Starring moves a project to the top
+  onFavouritesChanged(() => { if (el.isConnected) draw(); });
   el.querySelector('.search').addEventListener('input', event => { filters.search = event.target.value; draw(); });
   el.querySelectorAll('[data-filter]').forEach(select =>
     select.addEventListener('change', () => { filters[select.dataset.filter] = select.value; draw(); }));
@@ -193,7 +196,10 @@ function drawList(list, data, draw) {
   }
 
   const key = SORTS[filters.sort];
+  // Your favourites first, then the chosen order
   shown.sort((a, b) => {
+    const fav = Number(isFavourite(b.id)) - Number(isFavourite(a.id));
+    if (fav) return fav;
     const x = key(a);
     const y = key(b);
     const order = x < y ? -1 : x > y ? 1 : a.name.localeCompare(b.name);
@@ -226,6 +232,7 @@ function drawList(list, data, draw) {
             return `
               <tr class="clickable" data-href="#/campaigns/${esc(c.id)}">
                 <td data-label="Project"><div class="project-cell">
+                  ${c.is_template ? '' : starButton(c.id, c.name)}
                   <a class="row-link campaign-link" href="#/campaigns/${esc(c.id)}">${esc(c.name)}</a>
                   ${unitLine(c)}
                   ${c.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
@@ -251,6 +258,7 @@ function drawList(list, data, draw) {
   const scroller = list.querySelector('.list-scroll');
   if (place) [scroller.scrollTop, scroller.scrollLeft] = place;
 
+  wireStars(list);
   list.querySelectorAll('[data-sort]').forEach(button => button.addEventListener('click', () => {
     if (filters.sort === button.dataset.sort) filters.dir = filters.dir === 'asc' ? 'desc' : 'asc';
     else {

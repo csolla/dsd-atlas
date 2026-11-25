@@ -21,6 +21,7 @@ import { openFormsDialog } from '../forms-dialog.js';
 import { openRulesDialog } from '../rules-dialog.js';
 import { hasAllWords } from '../search.js';
 import { startTimer } from '../timer.js';
+import { starButton, wireStars } from '../favourites.js';
 
 const DONE_SHOWN = 10;
 
@@ -92,7 +93,7 @@ export async function renderCampaign(el, id, openTask = null) {
       <div class="head-line">
         <div class="head-title">
           ${personal ? '<a class="crumb" href="#/my-tasks">My tasks</a>' : '<a class="crumb" href="#/campaigns">Projects</a>'}<span class="crumb-sep" aria-hidden="true">›</span>
-          <h1>${esc(campaign.name)}</h1>
+          <h1>${esc(campaign.name)}</h1>${personal || campaign.is_template ? '' : starButton(campaign.id, campaign.name)}
           ${personal ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Only you can see this list</span>' : `
           ${statusPill(campaign.status)}
           ${campaign.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
@@ -249,6 +250,7 @@ export async function renderCampaign(el, id, openTask = null) {
     } catch { /* keep what's shown */ }
   }, { isBusy: () => page.dragging || editingField(page) || page.el.contains(document.activeElement) && document.activeElement.matches('.column-add input') });
 
+  wireStars(el.querySelector('.project-head'));
   el.querySelector('[data-forms]')?.addEventListener('click', () => openFormsDialog(page, team));
   el.querySelector('[data-rules]')?.addEventListener('click', () => openRulesDialog(page, team));
   el.querySelector('[data-fields]')?.addEventListener('click', () => openFieldsDialog(campaign, {

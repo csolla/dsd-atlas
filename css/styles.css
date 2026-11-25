@@ -402,6 +402,15 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 }
 .menu-item:hover { background: var(--surface-2); }
 .menu-item-danger { color: var(--danger); }
+/* Favourite projects: the star, and the ★ menu in the top bar */
+.star-btn { border: 0; background: none; padding: 0 2px; font-size: 17px; line-height: 1; color: var(--muted); cursor: pointer; flex-shrink: 0; }
+.star-btn[aria-pressed="true"] { color: var(--signal-ink); }
+.star-btn:hover { color: var(--signal-ink); }
+.star-btn:focus-visible { outline: 3px solid var(--focus); border-radius: 4px; }
+.fav-menu summary { list-style: none; font-size: 18px; color: var(--signal-ink); }
+.fav-menu summary::-webkit-details-marker { display: none; }
+.fav-menu .menu { min-width: 240px; max-height: 70vh; overflow-y: auto; }
+.menu-note { margin: 0; padding: 10px; color: var(--muted); font-size: 13px; max-width: 260px; }
 .menu-item:disabled { color: var(--muted); cursor: not-allowed; background: none; }
 
 /* Page layout -------------------------------------------------------------- */

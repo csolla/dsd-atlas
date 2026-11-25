@@ -5,6 +5,7 @@ import { loadDepartments } from './departments.js';
 import { startRealtime, stopRealtime } from './realtime.js';
 import { loadTimer, mountTimerBar, clearTimer } from './timer.js';
 import { mountBell, clearBell } from './notifications.js';
+import { loadFavourites, mountFavouritesMenu } from './favourites.js';
 import { renderLogin } from './pages/login.js';
 import { renderMyTasks } from './pages/my-tasks.js';
 import { renderMyTime } from './pages/my-time.js';
@@ -113,7 +114,7 @@ async function handleAuth(session) {
       renderLogin(app, { error: 'Your account is not active. Ask Carlota if you need access.' });
       return;
     }
-    await Promise.all([loadPeople(), loadDepartments()]);
+    await Promise.all([loadPeople(), loadDepartments(), loadFavourites().catch(() => {})]);
   } catch (error) {
     app.innerHTML = `<div class="splash">Could not load the app: ${esc(errorMessage(error))}</div>`;
     return;
@@ -124,6 +125,7 @@ async function handleAuth(session) {
   mountBell(app.querySelector('.bell-slot'));
   if (!isDirector()) {
     mountTimerBar(app.querySelector('.timer-slot'));
+    mountFavouritesMenu(app.querySelector('.fav-slot'));
     loadTimer().catch(() => {});
   }
   if (!window.location.hash.startsWith('#/')) {
@@ -153,6 +155,7 @@ function renderShell() {
           <input type="search" name="q" placeholder="Search" aria-label="Search everything" autocomplete="off" maxlength="200" title="Search everything (press / )">
         </form>
         <a class="icon-btn topbar-search-link" href="#/search" aria-label="Search everything" title="Search">${SEARCH_ICON}</a>` : ''}
+      ${role !== 'director' ? '<div class="fav-slot"></div>' : ''}
       <div class="timer-slot"></div>
       <div class="bell-slot"></div>
       <div class="user-menu">
