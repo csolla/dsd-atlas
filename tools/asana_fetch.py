@@ -80,7 +80,8 @@ def main():
         'name', 'notes', 'created_at', 'permalink_url', 'privacy_setting', 'owner.name', 'owner.email',
         'members.name', 'members.email', 'custom_field_settings.custom_field.name',
         'custom_field_settings.custom_field.type', 'custom_field_settings.custom_field.resource_subtype',
-        'custom_field_settings.custom_field.enum_options.name', 'custom_field_settings.custom_field.currency_code',
+        'custom_field_settings.custom_field.enum_options.name', 'custom_field_settings.custom_field.enum_options.color',
+        'custom_field_settings.custom_field.currency_code',
         'custom_field_settings.custom_field.precision'])})['data']
     project['sections'] = get_all(f'/projects/{pgid}/sections', {'opt_fields': 'name'})
     json.dump({'data': project}, open(os.path.join(folder, 'project.json'), 'w'), ensure_ascii=False)

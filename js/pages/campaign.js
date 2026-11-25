@@ -15,7 +15,7 @@ import { unitLine } from '../departments.js';
 import { loadAccess, projectAudience, accessNames } from '../access.js';
 import { openCampaignForm } from './campaigns.js';
 import { openTaskPanel } from './task-panel.js';
-import { loadFields, loadProjectValues, formatValue, fieldInput, readFieldInput, saveValue } from '../fields.js';
+import { loadFields, loadProjectValues, formatValue, formatHtml, choicePill, fieldInput, readFieldInput, saveValue } from '../fields.js';
 import { openFieldsDialog } from '../fields-dialog.js';
 import { hasAllWords } from '../search.js';
 import { startTimer } from '../timer.js';
@@ -380,8 +380,9 @@ function cardFields(page, task) {
   if (!tags.length) return '';
   const shown = tags.slice(0, CARD_FIELDS_SHOWN);
   const more = tags.length - shown.length;
-  return `<div class="task-card-fields">${shown.map(({ f, text }) => `
-    <span class="card-field" title="${esc(`${f.name}: ${text}`)}">${esc(text)}</span>`).join('')}
+  return `<div class="task-card-fields">${shown.map(({ f, text }) => (['choice', 'multi'].includes(f.type)
+    ? formatHtml(f, values[f.id])
+    : `<span class="card-field" title="${esc(`${f.name}: ${text}`)}">${esc(text)}</span>`)).join('')}
     ${more ? `<span class="card-field card-field-more" title="${esc(tags.slice(CARD_FIELDS_SHOWN).map(t => `${t.f.name}: ${t.text}`).join('\n'))}">+${more} more</span>` : ''}
   </div>`;
 }
@@ -708,7 +709,7 @@ function drawList(page, container, main, subtasksOf) {
           // Editors fill fields right in the List; others see the values
           if (canEditWork()) return `<td class="field-cell field-${esc(f.type)}">${fieldInput(f, value, { inline: true })}</td>`;
           const text = formatValue(f, value);
-          return `<td class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}" title="${esc(text)}">${text ? esc(text) : '<span class="muted">—</span>'}</td>`;
+          return `<td class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}" title="${esc(text)}">${text ? formatHtml(f, value) : '<span class="muted">—</span>'}</td>`;
         }).join('')}
       </tr>`;
   };
@@ -912,7 +913,7 @@ async function saveListField(page, target) {
   else values[field.id] = value;
   if (SUMMED.includes(field.type)) refreshTotals(page, page.el.querySelector('[data-tasks]'));
   if (field.type === 'multi') {
-    el.querySelector('summary').innerHTML = value?.length ? esc(value.join(', ')) : '<span class="muted">—</span>';
+    el.querySelector('summary').innerHTML = value?.length ? `<span class="choice-pills">${value.map(v => choicePill(field, v)).join('')}</span>` : '<span class="muted">—</span>';
   }
   try {
     await saveValue(taskId, field.id, value);

@@ -78,7 +78,13 @@ def field_type(cf):
 
 def field_settings(cf, ftype):
     if ftype in ('choice', 'multi'):
-        return {'options': [o['name'].strip() for o in cf.get('enum_options', []) if o.get('name', '').strip()]}
+        opts = [o for o in cf.get('enum_options', []) if o.get('name', '').strip()]
+        settings = {'options': [o['name'].strip() for o in opts]}
+        # Asana's colour names are the ones Atlas uses (CHOICE_COLORS in js/fields.js)
+        colors = {o['name'].strip(): o['color'] for o in opts if o.get('color') and o['color'] != 'none'}
+        if colors:
+            settings['colors'] = colors
+        return settings
     if ftype == 'money':
         return {'currencies': [cf.get('currency_code') or '€']}
     return {}

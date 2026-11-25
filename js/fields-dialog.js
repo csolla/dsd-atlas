@@ -1,6 +1,6 @@
 import { esc, options, formDialog, confirmDialog, toast, errorMessage } from './ui.js';
 import {
-  FIELD_TYPES, FIELD_SETS, loadFields, createField, updateField, deleteField, addFieldSet, settingsFromForm,
+  FIELD_TYPES, FIELD_SETS, CHOICE_COLORS, loadFields, createField, updateField, deleteField, addFieldSet, settingsFromForm,
 } from './fields.js';
 
 // The project's Fields dialog: its fields in order (move, edit, delete), a
@@ -136,6 +136,10 @@ function openFieldForm(campaign, fields, field, onSaved) {
       ${field ? '<p class="muted small form-note">A field\'s type can\'t be changed. To use another type, add a new field.</p>' : ''}
       <label class="field" data-for="choice multi"><span>Choices, one per line</span>
         <textarea name="options" rows="6" placeholder="Pending&#10;Approved&#10;Done">${lines(field?.settings?.options)}</textarea></label>
+      <div class="field choice-colors" data-for="choice multi">
+        <span>Colours</span>
+        <div data-choice-colors></div>
+      </div>
       <label class="field" data-for="money"><span>Currencies, one per line (the first is the default)</span>
         <textarea name="currencies" rows="3">${lines(field?.settings?.currencies || ['€', 'US$', 'GBP'])}</textarea></label>
       <label class="field" data-for="number"><span>Unit (optional, for example h or days)</span>
@@ -162,6 +166,29 @@ function openFieldForm(campaign, fields, field, onSaved) {
       onSaved();
     },
   });
+  // A colour for each choice, kept by name while the list is edited
+  const picked = { ...(field?.settings?.colors || {}) };
+  const colorBox = dialog.querySelector('[data-choice-colors]');
+  const drawColors = () => {
+    colorBox.querySelectorAll('[data-option-color]').forEach(s => { picked[s.dataset.optionColor] = s.value; });
+    const opts = [...new Set(dialog.querySelector('[name=options]').value.split('\n').map(s => s.trim()).filter(Boolean))];
+    colorBox.innerHTML = opts.length ? opts.map(o => `
+      <label class="choice-color-row">
+        <span class="choice-pill ${picked[o] ? `choice-${esc(picked[o])}` : ''}">${esc(o)}</span>
+        <select data-option-color="${esc(o)}" aria-label="Colour for ${esc(o)}">
+          <option value="">No colour</option>${options(CHOICE_COLORS, picked[o] || '')}
+        </select>
+      </label>`).join('') : '<p class="muted small">Type the choices above, then pick a colour for each.</p>';
+  };
+  colorBox.addEventListener('change', event => {
+    const select = event.target.closest('[data-option-color]');
+    if (!select) return;
+    picked[select.dataset.optionColor] = select.value;
+    select.previousElementSibling.className = `choice-pill ${select.value ? `choice-${select.value}` : ''}`;
+  });
+  dialog.querySelector('[name=options]').addEventListener('input', drawColors);
+  drawColors();
+
   // Only show the boxes the chosen type uses
   const typeSelect = dialog.querySelector('[name=type]');
   const showFor = () => dialog.querySelectorAll('[data-for]').forEach(box => {

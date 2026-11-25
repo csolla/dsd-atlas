@@ -142,6 +142,63 @@
   color-scheme: dark;
 }
 
+/* Colours for field choices, named like Asana's so imports keep them.
+   Pastel with dark text in light mode, deep with light text in dark mode
+   (every pair at least 4.5:1). The choice's name is always shown too. */
+:root {
+  --choice-red-bg: #fde2e1; --choice-red-fg: #9f1c1c;
+  --choice-orange-bg: #fde7d4; --choice-orange-fg: #9a3d07;
+  --choice-yellow-orange-bg: #fdefcf; --choice-yellow-orange-fg: #8a4b05;
+  --choice-yellow-bg: #fdf6c4; --choice-yellow-fg: #6b5600;
+  --choice-yellow-green-bg: #ecf6c9; --choice-yellow-green-fg: #4a660a;
+  --choice-green-bg: #dcf5e3; --choice-green-fg: #166534;
+  --choice-blue-green-bg: #d4f3ec; --choice-blue-green-fg: #0f6b5a;
+  --choice-aqua-bg: #d6f3f9; --choice-aqua-fg: #0e6178;
+  --choice-blue-bg: #dbe8fe; --choice-blue-fg: #1e4fbf;
+  --choice-indigo-bg: #e3e3fd; --choice-indigo-fg: #3f3fb0;
+  --choice-purple-bg: #eee3fd; --choice-purple-fg: #6b2fb4;
+  --choice-magenta-bg: #f9e0f7; --choice-magenta-fg: #8e1f86;
+  --choice-hot-pink-bg: #fde0ec; --choice-hot-pink-fg: #a3134f;
+  --choice-pink-bg: #fbe4e9; --choice-pink-fg: #9b2c4a;
+  --choice-cool-gray-bg: #e9edf1; --choice-cool-gray-fg: #3f4b57;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --choice-red-bg: #4a1717; --choice-red-fg: #fecaca;
+  --choice-orange-bg: #4a2610; --choice-orange-fg: #fed7aa;
+  --choice-yellow-orange-bg: #45300c; --choice-yellow-orange-fg: #fde3a7;
+  --choice-yellow-bg: #3d360c; --choice-yellow-fg: #fef08a;
+  --choice-yellow-green-bg: #2b3a0e; --choice-yellow-green-fg: #d9f99d;
+  --choice-green-bg: #14361f; --choice-green-fg: #bbf7d0;
+  --choice-blue-green-bg: #103a33; --choice-blue-green-fg: #a7f3d0;
+  --choice-aqua-bg: #0f3540; --choice-aqua-fg: #a5f3fc;
+  --choice-blue-bg: #172b55; --choice-blue-fg: #bfdbfe;
+  --choice-indigo-bg: #24245a; --choice-indigo-fg: #c7d2fe;
+  --choice-purple-bg: #34205a; --choice-purple-fg: #ddd6fe;
+  --choice-magenta-bg: #46163f; --choice-magenta-fg: #f5d0fe;
+  --choice-hot-pink-bg: #4a1229; --choice-hot-pink-fg: #fbcfe8;
+  --choice-pink-bg: #44192a; --choice-pink-fg: #fecdd3;
+  --choice-cool-gray-bg: #2a333c; --choice-cool-gray-fg: #e2e8f0;
+  }
+}
+:root[data-theme="dark"] {
+  --choice-red-bg: #4a1717; --choice-red-fg: #fecaca;
+  --choice-orange-bg: #4a2610; --choice-orange-fg: #fed7aa;
+  --choice-yellow-orange-bg: #45300c; --choice-yellow-orange-fg: #fde3a7;
+  --choice-yellow-bg: #3d360c; --choice-yellow-fg: #fef08a;
+  --choice-yellow-green-bg: #2b3a0e; --choice-yellow-green-fg: #d9f99d;
+  --choice-green-bg: #14361f; --choice-green-fg: #bbf7d0;
+  --choice-blue-green-bg: #103a33; --choice-blue-green-fg: #a7f3d0;
+  --choice-aqua-bg: #0f3540; --choice-aqua-fg: #a5f3fc;
+  --choice-blue-bg: #172b55; --choice-blue-fg: #bfdbfe;
+  --choice-indigo-bg: #24245a; --choice-indigo-fg: #c7d2fe;
+  --choice-purple-bg: #34205a; --choice-purple-fg: #ddd6fe;
+  --choice-magenta-bg: #46163f; --choice-magenta-fg: #f5d0fe;
+  --choice-hot-pink-bg: #4a1229; --choice-hot-pink-fg: #fbcfe8;
+  --choice-pink-bg: #44192a; --choice-pink-fg: #fecdd3;
+  --choice-cool-gray-bg: #2a333c; --choice-cool-gray-fg: #e2e8f0;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -488,6 +545,29 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .card-field { display: inline-block; max-width: 100%; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px; font-weight: 550;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-field-more { color: var(--muted); }
+/* A field choice as a coloured pill (name always shown) */
+.choice-pill { display: inline-block; max-width: 100%; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.choice-colors > div { display: grid; gap: 6px; }
+.choice-color-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.choice-color-row select { max-width: 160px; }
+.choice-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+select.choice-select { font-weight: 600; }
+.choice-red { background: var(--choice-red-bg); color: var(--choice-red-fg); border-color: transparent; }
+.choice-orange { background: var(--choice-orange-bg); color: var(--choice-orange-fg); border-color: transparent; }
+.choice-yellow-orange { background: var(--choice-yellow-orange-bg); color: var(--choice-yellow-orange-fg); border-color: transparent; }
+.choice-yellow { background: var(--choice-yellow-bg); color: var(--choice-yellow-fg); border-color: transparent; }
+.choice-yellow-green { background: var(--choice-yellow-green-bg); color: var(--choice-yellow-green-fg); border-color: transparent; }
+.choice-green { background: var(--choice-green-bg); color: var(--choice-green-fg); border-color: transparent; }
+.choice-blue-green { background: var(--choice-blue-green-bg); color: var(--choice-blue-green-fg); border-color: transparent; }
+.choice-aqua { background: var(--choice-aqua-bg); color: var(--choice-aqua-fg); border-color: transparent; }
+.choice-blue { background: var(--choice-blue-bg); color: var(--choice-blue-fg); border-color: transparent; }
+.choice-indigo { background: var(--choice-indigo-bg); color: var(--choice-indigo-fg); border-color: transparent; }
+.choice-purple { background: var(--choice-purple-bg); color: var(--choice-purple-fg); border-color: transparent; }
+.choice-magenta { background: var(--choice-magenta-bg); color: var(--choice-magenta-fg); border-color: transparent; }
+.choice-hot-pink { background: var(--choice-hot-pink-bg); color: var(--choice-hot-pink-fg); border-color: transparent; }
+.choice-pink { background: var(--choice-pink-bg); color: var(--choice-pink-fg); border-color: transparent; }
+.choice-cool-gray { background: var(--choice-cool-gray-bg); color: var(--choice-cool-gray-fg); border-color: transparent; }
 
 .task-card {
   background: var(--surface);

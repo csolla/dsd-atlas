@@ -10,7 +10,8 @@ import { esc, fmtDate } from './ui.js';
 //   text: "words"            number: 12.5             date: "2026-11-20"
 //   money: { amount: 8610.01, currency: "€" }       choice: "Done"
 //   multi: ["201.4 - COGS Lab", "Labour"]            person: "<person id>"
-// Settings: { options: [...] } for choice and multi; { currencies: [...] }
+// Settings: { options: [...], colors: { option: colour } } for choice and
+// multi (colours are CHOICE_COLORS keys, Asana's names); { currencies: [...] }
 // for money; { unit: "h" } for number (optional).
 
 export const FIELD_TYPES = {
@@ -150,6 +151,45 @@ export function isEmpty(value) {
 
 const fmtNumber = n => Number(n).toLocaleString('en-GB', { maximumFractionDigits: 2 });
 
+// Colours a choice can have, named like Asana's so imported projects keep
+// theirs (tokens --choice-<key>-bg / -fg in css/styles.css)
+export const CHOICE_COLORS = {
+  red: 'Red', orange: 'Orange', 'yellow-orange': 'Yellow orange', yellow: 'Yellow', 'yellow-green': 'Yellow green',
+  green: 'Green', 'blue-green': 'Blue green', aqua: 'Aqua', blue: 'Blue', indigo: 'Indigo', purple: 'Purple',
+  magenta: 'Magenta', 'hot-pink': 'Hot pink', pink: 'Pink', 'cool-gray': 'Gray',
+};
+
+export function choiceColor(field, option) {
+  const color = field.settings?.colors?.[option];
+  return CHOICE_COLORS[color] ? color : '';
+}
+
+// One choice as a coloured pill, with its name
+export function choicePill(field, option) {
+  const color = choiceColor(field, option);
+  return `<span class="choice-pill ${color ? `choice-${color}` : ''}" title="${esc(`${field.name}: ${option}`)}">${esc(option)}</span>`;
+}
+
+// A value as HTML: choices as coloured pills, everything else as text
+export function formatHtml(field, value) {
+  if (isEmpty(value)) return '';
+  if (field.type === 'choice') return choicePill(field, value);
+  if (field.type === 'multi') return `<span class="choice-pills">${value.map(v => choicePill(field, v)).join('')}</span>`;
+  return esc(formatValue(field, value));
+}
+
+// A choice dropdown takes the colour of its current choice
+const colorsAttr = field => (field.settings?.colors ? `data-choice-colors="${esc(JSON.stringify(field.settings.colors))}"` : '');
+document.addEventListener('change', event => {
+  const select = event.target;
+  if (!select.matches?.('select.choice-select')) return;
+  let colors = {};
+  try { colors = JSON.parse(select.dataset.choiceColors || '{}'); } catch { /* none */ }
+  [...select.classList].filter(c => c.startsWith('choice-') && c !== 'choice-select').forEach(c => select.classList.remove(c));
+  const color = colors[select.value];
+  if (CHOICE_COLORS[color]) select.classList.add(`choice-${color}`);
+});
+
 // A value as plain text for lists and tables ('' when empty)
 export function formatValue(field, value) {
   if (isEmpty(value)) return '';
@@ -185,7 +225,8 @@ export function fieldInput(field, value, { disabled = false, inline = false } = 
     case 'choice': {
       const list = field.settings?.options || [];
       const all = value && !list.includes(value) ? [...list, value] : list;
-      return `<select ${attrs}><option value="">—</option>${opts(all, [value])}</select>`;
+      const color = value ? choiceColor(field, value) : '';
+      return `<select class="choice-select ${color ? `choice-${color}` : ''}" ${colorsAttr(field)} ${attrs}><option value="">—</option>${opts(all, [value])}</select>`;
     }
     case 'multi': {
       const list = field.settings?.options || [];
@@ -194,7 +235,7 @@ export function fieldInput(field, value, { disabled = false, inline = false } = 
       if (inline) {
         // In a List cell: a compact dropdown of tick boxes
         return `<details class="multi-cell" ${attrs}>
-          <summary>${chosen.length ? esc(chosen.join(', ')) : '<span class="muted">—</span>'}</summary>
+          <summary>${chosen.length ? `<span class="choice-pills">${chosen.map(v => choicePill(field, v)).join('')}</span>` : '<span class="muted">—</span>'}</summary>
           <div class="multi-cell-menu" role="group" aria-label="${esc(field.name)}">${all.map(o => `
             <label class="multi-choice-item"><input type="checkbox" value="${esc(o)}" ${chosen.includes(o) ? 'checked' : ''}> ${esc(o)}</label>`).join('')
             || '<span class="muted small">No choices yet. Add some in Fields.</span>'}</div>
@@ -233,7 +274,14 @@ export function readFieldInput(field, el) {
 // Settings from the field form's boxes ("one per line")
 export function settingsFromForm(type, form) {
   const lines = name => [...new Set(String(form.elements[name]?.value || '').split('\n').map(s => s.trim()).filter(Boolean))];
-  if (type === 'choice' || type === 'multi') return { options: lines('options') };
+  if (type === 'choice' || type === 'multi') {
+    const opts = lines('options');
+    const colors = {};
+    form.querySelectorAll('[data-option-color]').forEach(select => {
+      if (select.value && opts.includes(select.dataset.optionColor)) colors[select.dataset.optionColor] = select.value;
+    });
+    return Object.keys(colors).length ? { options: opts, colors } : { options: opts };
+  }
   if (type === 'money') return { currencies: lines('currencies').length ? lines('currencies') : ['€'] };
   if (type === 'number') return form.elements.unit?.value.trim() ? { unit: form.elements.unit.value.trim() } : {};
   return {};
