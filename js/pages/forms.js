@@ -2,6 +2,7 @@ import { esc, toast, errorMessage } from '../ui.js';
 import { uploadFile, MAX_FILE_BYTES } from '../attachments.js';
 import { fieldInput, readFieldInput } from '../fields.js';
 import { listForms, getForm, submitForm, formLink, questionType, questionField } from '../forms.js';
+import { hasAllWords } from '../search.js';
 
 // Forms: the list of every form people can send (#/forms), and one form to
 // fill in (#/forms/<id>). Open to everyone signed in, directors included.
@@ -12,6 +13,9 @@ export async function renderForms(el) {
       <h1>Forms</h1>
       <p class="muted">Ask another team for something. Each form sends your request to the right project, and the team picks it up from there.</p>
     </div></div>
+    <div class="filters">
+      <input class="search" type="search" placeholder="Find a form" aria-label="Find a form" data-find-form>
+    </div>
     <div data-forms><p class="muted">Loading forms…</p></div>`;
   const box = el.querySelector('[data-forms]');
   let forms;
@@ -25,7 +29,12 @@ export async function renderForms(el) {
     box.innerHTML = '<div class="empty-state"><p>No forms yet. A project\'s editors can add one with <strong>Forms</strong> on the project page.</p></div>';
     return;
   }
-  box.innerHTML = `<ul class="form-list">${forms.map(f => `
+  // Each word typed must be in the form's name, its project or its intro
+  const find = el.querySelector('[data-find-form]');
+  const draw = () => {
+    const q = find.value;
+    const shown = forms.filter(f => !q.trim() || hasAllWords([f.name, f.project, f.intro], q));
+    box.innerHTML = shown.length ? `<ul class="form-list">${shown.map(f => `
     <li class="card form-list-item">
       <div>
         <h2><a href="#/forms/${esc(f.id)}">${esc(f.name)}</a></h2>
@@ -33,7 +42,12 @@ export async function renderForms(el) {
         ${f.intro ? `<p class="form-list-intro">${esc(f.intro.length > 220 ? `${f.intro.slice(0, 220)}…` : f.intro)}</p>` : ''}
       </div>
       <a class="btn btn-small" href="#/forms/${esc(f.id)}">Fill in</a>
-    </li>`).join('')}</ul>`;
+    </li>`).join('')}</ul>`
+      : `<div class="empty-state"><p>No form matches “${esc(q.trim())}”. Try fewer or different words.</p></div>`;
+  };
+  find.addEventListener('input', draw);
+  draw();
+  find.focus();
 }
 
 export async function renderForm(el, id) {
