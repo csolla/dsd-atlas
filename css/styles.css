@@ -533,9 +533,11 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.tasks-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+/* Sized to fit one line even with the task panel open (1304 px of page) */
+.tasks-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.tasks-toolbar .view-switch button { padding: 6px 11px; }
 .tasks-toolbar .view-switch { margin-right: 4px; }
-.tasks-toolbar select { max-width: 200px; }
+.tasks-toolbar select { max-width: 160px; }
 /* Fields, Forms and Rules stay together when the toolbar wraps */
 .toolbar-tools { display: flex; align-items: center; }
 .toolbar-tools .btn-small, .tasks-toolbar > .btn-small { margin-left: 0; }
@@ -977,7 +979,7 @@ a.week-pill:hover { border-color: var(--accent-bright); }
 /* Settings ------------------------------------------------------------------ */
 
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-.tab { padding: 8px 14px; color: var(--muted); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab { white-space: nowrap; padding: 8px 14px; color: var(--muted); text-decoration: none; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--text); border-bottom-color: var(--accent); }
 .tab-intro { margin-bottom: 14px; }
@@ -1305,7 +1307,7 @@ th[aria-sort="ascending"] .sort-btn, th[aria-sort="descending"] .sort-btn { colo
 .quick-add-bar { display: flex; gap: 8px; margin-bottom: 10px; padding: 8px; background: var(--accent-soft); border-radius: var(--radius); }
 .quick-add-bar .quick-title { flex: 1; min-width: 0; }
 .quick-add-bar select { max-width: 200px; }
-.tasks-toolbar .search { flex: 0 1 260px; }
+.tasks-toolbar .search { flex: 0 1 180px; min-width: 120px; }
 .column-add { margin-top: 8px; }
 .column-add input { width: 100%; }
 .column-add-open, .column-more { width: 100%; justify-content: flex-start; margin-left: 0 !important; color: var(--muted); }
@@ -1510,6 +1512,8 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
   .projects-head .tabs, .mytime-head .tabs { flex-basis: 100%; overflow-x: auto; }
   .help-toc { position: static; }
   .time-controls { gap: 10px; }
+  /* The Timesheet buttons wrap instead of running off the screen */
+  .time-controls .actions { flex: 1 1 100%; min-width: 0; }
   .week-nav strong { width: 100%; margin: 4px 0 0; }
   .week-nav { flex-wrap: wrap; }
 }
