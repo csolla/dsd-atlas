@@ -687,9 +687,12 @@ tbody.is-closed tr:not(.task-section-row) { display: none; }
 .prop-value :is(input, select):not(.choice-select) { background: transparent; }
 .prop-value :is(input, select):is(:hover, :focus) { border-color: var(--border); }
 .prop-value :is(input, select):not(.choice-select):is(:hover, :focus) { background: var(--surface); }
-.prop-project { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
-.prop-project a { color: var(--text); font-weight: 550; }
-.prop-project select { min-height: 30px; padding: 3px 8px; }
+/* Project row like Asana's: a square, the project, then its section as a quiet dropdown */
+.prop-project { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.project-swatch { width: 12px; height: 12px; border-radius: 3px; background: var(--accent-bright); flex-shrink: 0; }
+.prop-project a { color: var(--text); text-decoration: none; }
+.prop-project a:hover { text-decoration: underline; }
+.section-pick select { min-height: 28px; padding: 2px 6px; color: var(--muted); font-size: 13.5px; width: auto; }
 .panel-description { margin: 0 0 16px; display: grid; gap: 6px; }
 .panel-section-title { font-size: 15px; font-weight: 650; color: var(--text); }
 

@@ -6,7 +6,6 @@ import { loadFields, loadTaskValues, saveValue, fieldInput, readFieldInput } fro
 import { loadTasksHours } from '../time.js';
 import { startTimer } from '../timer.js';
 import { esc, options, fmtHours, toast, errorMessage, confirmDialog, formDialog, TASK_STATUSES } from '../ui.js';
-import { forTag } from '../departments.js';
 import { loadAccess, projectAudience } from '../access.js';
 import { setMentionAudience } from '../comments.js';
 import { openTimeEntryForm } from './time-entry-form.js';
@@ -145,8 +144,9 @@ function render() {
           <div class="prop-value"><input id="tp-due" type="date" data-field="due_date"></div></div>
         <div class="prop-row"><span class="prop-label">Project</span>
           <div class="prop-value prop-project">
-            <a href="#/campaigns/${esc(task.campaign.id)}">${esc(task.campaign.name)}</a> ${forTag(task.campaign)}
-            <span data-section-field hidden><select data-field="section_id" aria-label="Section"></select></span>
+            <span class="project-swatch" aria-hidden="true"></span>
+            <a href="#/campaigns/${esc(task.campaign.id)}">${esc(task.campaign.name)}</a>
+            <span class="section-pick" data-section-field hidden><select data-field="section_id" aria-label="Section" title="Section"></select></span>
           </div></div>
         <div class="prop-row"><label class="prop-label" for="tp-status">Status</label>
           <div class="prop-value"><select id="tp-status" data-field="status">${options(TASK_STATUSES, task.status)}</select></div></div>
