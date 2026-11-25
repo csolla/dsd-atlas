@@ -6,10 +6,10 @@ import { supabase } from './supabase.js';
 // functions, which work even for private projects.
 
 // Question types, like Asana's forms
-export const QUESTION_TYPES = { text: 'Text', choice: 'Single-select', multi: 'Multi-select', date: 'Date', number: 'Number' };
+export const QUESTION_TYPES = { text: 'Text', choice: 'Single-select', multi: 'Multi-select', date: 'Date', number: 'Number', file: 'File upload' };
 
 // Project field types a question of each type can fill
-export const FIELDS_FOR_TYPE = { text: ['text'], choice: ['choice'], multi: ['multi'], date: ['date'], number: ['number', 'money'] };
+export const FIELDS_FOR_TYPE = { text: ['text'], choice: ['choice'], multi: ['multi'], date: ['date'], number: ['number', 'money'], file: [] };
 
 // A question's type; questions saved before types existed get one from
 // where their answer goes

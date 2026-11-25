@@ -78,7 +78,7 @@ function openFormEditor(page, team, form, onSaved) {
   const personFields = fields.filter(f => f.type === 'person');
   // Where an answer of each type can go: the description, the due date
   // (dates), or a project field of the same kind
-  const targetsFor = type => ({
+  const targetsFor = type => (type === 'file' ? { files: 'Attached to the task' } : {
     text: 'The description',
     ...(type === 'date' ? { due_date: 'The due date' } : {}),
     ...Object.fromEntries(fields.filter(f => FIELDS_FOR_TYPE[type].includes(f.type))
@@ -165,7 +165,7 @@ function openFormEditor(page, team, form, onSaved) {
     box.innerHTML = questions.map((q, i) => {
       const type = questionType(q, fields);
       const targets = targetsFor(type);
-      const target = targetOf(q) in targets ? targetOf(q) : 'text';
+      const target = targetOf(q) in targets ? targetOf(q) : Object.keys(targets)[0];
       const ownChoices = ['choice', 'multi'].includes(type) && !target.startsWith('field:');
       return `
       <div class="form-question" data-q="${esc(q.key)}">
