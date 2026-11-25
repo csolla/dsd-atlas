@@ -5,8 +5,29 @@ import { supabase } from './supabase.js';
 // table; everyone else lists, opens and sends them through the database
 // functions, which work even for private projects.
 
-// Where a question's answer goes
-export const QUESTION_TARGETS = { text: 'The description', due_date: 'The due date' };
+// Question types, like Asana's forms
+export const QUESTION_TYPES = { text: 'Text', choice: 'Single-select', multi: 'Multi-select', date: 'Date', number: 'Number' };
+
+// Project field types a question of each type can fill
+export const FIELDS_FOR_TYPE = { text: ['text'], choice: ['choice'], multi: ['multi'], date: ['date'], number: ['number', 'money'] };
+
+// A question's type; questions saved before types existed get one from
+// where their answer goes
+export function questionType(q, fields = []) {
+  if (q.type) return q.type;
+  if (q.target === 'due_date') return 'date';
+  if (q.target === 'field') {
+    const type = (q.field || fields.find(f => f.id === q.field_id))?.type;
+    return type === 'money' ? 'number' : (QUESTION_TYPES[type] ? type : 'text');
+  }
+  return 'text';
+}
+
+// A question shown as an input: its project field, or a stand-in field of
+// its own type and choices, so js/fields.js draws and reads it
+export const questionField = q => q.field || {
+  id: `q-${q.key}`, name: q.label || 'Question', type: questionType(q), settings: { options: q.options || [] },
+};
 
 export async function loadProjectForms(campaignId) {
   const { data, error } = await supabase.from('forms').select('*').eq('campaign_id', campaignId).order('name');

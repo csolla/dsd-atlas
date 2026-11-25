@@ -1,6 +1,5 @@
 import { esc, options, formDialog, confirmDialog, toast, errorMessage } from './ui.js';
-import { FIELD_TYPES } from './fields.js';
-import { QUESTION_TARGETS, loadProjectForms, saveForm, deleteForm, formLink, newQuestionKey } from './forms.js';
+import { QUESTION_TYPES, FIELDS_FOR_TYPE, questionType, loadProjectForms, saveForm, deleteForm, formLink, newQuestionKey } from './forms.js';
 
 // A project's Forms dialog (Forms button on the project page): its forms,
 // with Open, Copy link, Edit and Delete, and + New form.
@@ -77,9 +76,14 @@ function openFormEditor(page, team, form, onSaved) {
   const { campaign, fields, sections } = page;
   let questions = (form?.questions || []).map(q => ({ ...q }));
   const personFields = fields.filter(f => f.type === 'person');
-  // Where an answer can go: the description, the due date, or one of the
-  // project's fields
-  const targets = { ...QUESTION_TARGETS, ...Object.fromEntries(fields.map(f => [`field:${f.id}`, `${f.name} (${FIELD_TYPES[f.type] || f.type} field)`])) };
+  // Where an answer of each type can go: the description, the due date
+  // (dates), or a project field of the same kind
+  const targetsFor = type => ({
+    text: 'The description',
+    ...(type === 'date' ? { due_date: 'The due date' } : {}),
+    ...Object.fromEntries(fields.filter(f => FIELDS_FOR_TYPE[type].includes(f.type))
+      .map(f => [`field:${f.id}`, `The ${f.name} field`])),
+  });
   const targetOf = q => (q.target === 'field' ? `field:${q.field_id}` : q.target);
 
   const dialog = formDialog({
@@ -114,6 +118,8 @@ function openFormEditor(page, team, form, onSaved) {
       if (!titleLabel) return 'Write the first question, the one that becomes the task title.';
       const blank = questions.findIndex(q => !q.label);
       if (blank !== -1) return `Question ${blank + 2} needs its wording.`;
+      const noChoices = questions.findIndex(q => ['choice', 'multi'].includes(q.type) && q.target !== 'field' && !(q.options || []).length);
+      if (noChoices !== -1) return `Question ${noChoices + 2} needs its choices, one per line.`;
       const values = {
         campaign_id: campaign.id, name, title_label: titleLabel,
         intro: el.elements.intro.value.trim() || null,
@@ -140,19 +146,28 @@ function openFormEditor(page, team, form, onSaved) {
     questions = [...box.querySelectorAll('[data-q]')].map(row => {
       const target = row.querySelector('[data-target]').value;
       const isField = target.startsWith('field:');
+      const type = row.querySelector('[data-type]').value;
+      const options = [...new Set(row.querySelector('[data-options]').value.split('\n').map(s => s.trim()).filter(Boolean))];
       return {
         key: row.dataset.q,
         label: row.querySelector('[data-label]').value.trim(),
         help: row.querySelector('[data-help]').value.trim() || undefined,
+        type,
         target: isField ? 'field' : target,
         ...(isField ? { field_id: target.slice(6) } : {}),
+        ...(!isField && ['choice', 'multi'].includes(type) ? { options } : {}),
         required: row.querySelector('[data-required]').checked,
       };
     });
   }
 
   function draw() {
-    box.innerHTML = questions.map((q, i) => `
+    box.innerHTML = questions.map((q, i) => {
+      const type = questionType(q, fields);
+      const targets = targetsFor(type);
+      const target = targetOf(q) in targets ? targetOf(q) : 'text';
+      const ownChoices = ['choice', 'multi'].includes(type) && !target.startsWith('field:');
+      return `
       <div class="form-question" data-q="${esc(q.key)}">
         <div class="form-question-top">
           <strong class="muted">${i + 2}.</strong>
@@ -162,14 +177,27 @@ function openFormEditor(page, team, form, onSaved) {
           <button class="icon-btn" type="button" data-remove aria-label="Remove question ${i + 2}" title="Remove">×</button>
         </div>
         <div class="form-question-details">
-          <input data-help maxlength="300" value="${esc(q.help || '')}" placeholder="Help text (optional)" aria-label="Help text for question ${i + 2}">
+          <label class="field-inline"><span class="muted small">Type</span>
+            <select data-type>${options(QUESTION_TYPES, type)}</select></label>
           <label class="field-inline"><span class="muted small">Answer goes to</span>
-            <select data-target>${options(targets, targetOf(q))}</select></label>
+            <select data-target>${options(targets, target)}</select></label>
           <label class="checkbox-line"><input type="checkbox" data-required ${q.required ? 'checked' : ''}> Required</label>
         </div>
-      </div>`).join('') || '<p class="muted small">Add the other things you need to know. Answers can fill a project field (with its choices), the due date, or the description.</p>';
+        <input data-help maxlength="300" value="${esc(q.help || '')}" placeholder="Help text (optional)" aria-label="Help text for question ${i + 2}">
+        <label class="field" ${ownChoices ? '' : 'hidden'}><span class="muted small">Choices, one per line</span>
+          <textarea data-options rows="3" placeholder="Option 1&#10;Option 2">${esc((q.options || []).join('\n'))}</textarea></label>
+        ${target.startsWith('field:') && ['choice', 'multi'].includes(type) ? '<p class="muted small">Uses the choices (and colours) of that field. Change them in Fields.</p>' : ''}
+      </div>`;
+    }).join('') || '<p class="muted small">Add the other things you need to know: text, a single or multi-select, a date or a number. Answers go into the description, the due date or one of the project\'s fields.</p>';
   }
 
+  // A new type or destination changes what the question offers
+  box.addEventListener('change', event => {
+    if (event.target.matches('[data-type], [data-target]')) {
+      readQuestions();
+      draw();
+    }
+  });
   box.addEventListener('click', event => {
     const button = event.target.closest('button');
     const row = button?.closest('[data-q]');
@@ -183,7 +211,7 @@ function openFormEditor(page, team, form, onSaved) {
   });
   dialog.querySelector('[data-add-question]').addEventListener('click', () => {
     readQuestions();
-    questions.push({ key: newQuestionKey(), label: '', target: 'text', required: false });
+    questions.push({ key: newQuestionKey(), label: '', type: 'text', target: 'text', required: false });
     draw();
     box.querySelector('[data-q]:last-child [data-label]')?.focus();
   });

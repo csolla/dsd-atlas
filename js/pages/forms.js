@@ -1,6 +1,6 @@
 import { esc, toast, errorMessage } from '../ui.js';
 import { fieldInput, readFieldInput } from '../fields.js';
-import { listForms, getForm, submitForm, formLink } from '../forms.js';
+import { listForms, getForm, submitForm, formLink, questionType, questionField } from '../forms.js';
 
 // Forms: the list of every form people can send (#/forms), and one form to
 // fill in (#/forms/<id>). Open to everyone signed in, directors included.
@@ -51,11 +51,12 @@ export async function renderForm(el, id) {
   }
   const questions = (form.questions || []).filter(q => q.target !== 'field' || q.field);
   const label = q => `${esc(q.label || 'Question')}${q.required ? ' <span class="required-mark" aria-hidden="true">*</span>' : ''}`;
-  const input = q => {
-    if (q.target === 'due_date') return `<input type="date" id="fq-${esc(q.key)}" ${q.required ? 'required' : ''}>`;
-    if (q.target === 'text') return `<textarea id="fq-${esc(q.key)}" rows="3" maxlength="4000" ${q.required ? 'required' : ''}></textarea>`;
-    return fieldInput(q.field, null);
-  };
+  // Text answers get a roomy box; everything else uses the field inputs
+  // (dropdowns, tick boxes, dates, numbers)
+  const plainText = q => q.target !== 'field' && questionType(q) === 'text';
+  const input = q => (plainText(q)
+    ? `<textarea id="fq-${esc(q.key)}" rows="3" maxlength="4000" ${q.required ? 'required' : ''}></textarea>`
+    : fieldInput(questionField(q), null));
 
   el.innerHTML = `
     <a class="back-link" href="#/forms">← Forms</a>
@@ -101,11 +102,11 @@ export async function renderForm(el, id) {
     for (const q of questions) {
       const box = formEl.querySelector(`[data-question="${CSS.escape(q.key)}"]`);
       let value = null;
-      if (q.target === 'field') {
-        const target = box.querySelector('[data-field-id]');
-        value = target ? readFieldInput(q.field, target) : null;
+      if (plainText(q)) {
+        value = box.querySelector('textarea').value.trim() || null;
       } else {
-        value = box.querySelector('input, textarea').value.trim() || null;
+        const target = box.querySelector('[data-field-id]');
+        value = target ? readFieldInput(questionField(q), target) : null;
       }
       if (value != null && !(Array.isArray(value) && !value.length)) answers[q.key] = value;
     }
