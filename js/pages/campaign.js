@@ -83,32 +83,36 @@ export async function renderCampaign(el, id, openTask = null) {
 
   // The view switch comes first in the toolbar, so it stays in the same place
   // whichever filters a view shows
+  const canAdd = canEditWork() && !campaign.archived_at;
+  // The header is one line (Carlota, 25 Nov): where you are, the project,
+  // its status and owner, hours and progress, then the actions. Department,
+  // dates, the Asana link and the description are under Details.
   el.innerHTML = `
-    ${personal ? '<a class="back-link" href="#/my-tasks">← My tasks</a>' : '<a class="back-link" href="#/campaigns">← Projects</a>'}
-    <section class="card campaign-summary">
-      <div class="summary-top">
-        <div class="summary-title">
+    <section class="project-head">
+      <div class="head-line">
+        <div class="head-title">
+          ${personal ? '<a class="crumb" href="#/my-tasks">My tasks</a>' : '<a class="crumb" href="#/campaigns">Projects</a>'}<span class="crumb-sep" aria-hidden="true">›</span>
           <h1>${esc(campaign.name)}</h1>
-          <div class="summary-meta">
-            ${personal ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Only you can see this list</span>' : `
-            ${unitLine(campaign)}
-            ${campaign.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
-            ${statusPill(campaign.status)}
-            <span>${esc(fmtCompactRange(campaign.start_date, campaign.end_date))}</span>
-            ${owner ? `<span class="person">${avatar(owner, 20)}${esc(owner.name)}</span>` : ''}
-            ${campaign.asana_url ? `<a href="${esc(campaign.asana_url)}" target="_blank" rel="noopener" title="Imported from Asana: older and finished work stays there">Open in Asana ↗</a>` : ''}`}
-          </div>
+          ${personal ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Only you can see this list</span>' : `
+          ${statusPill(campaign.status)}
+          ${campaign.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
+          ${owner ? `<span class="person head-owner" title="Owner">${avatar(owner, 22)}${esc(owner.name)}</span>` : ''}`}
         </div>
-        <div class="summary-stats">
-          <div class="stat"><span class="stat-label">Hours</span><span data-hours>…</span>
-            ${canEditWork() && !campaign.is_template && !campaign.archived_at ? '<button class="btn btn-small project-timer" type="button" data-project-timer title="Time on the project as a whole, not one task: it goes on its General work task">▶ Start timer</button>' : ''}</div>
-          <div class="stat"><span class="stat-label">Tasks done</span><span data-progress></span></div>
+        <div class="head-stats">
+          <span class="head-stat"><span class="stat-label">Hours</span><span data-hours>…</span></span>
+          ${canEditWork() && !campaign.is_template && !campaign.archived_at ? '<button class="btn btn-small project-timer" type="button" data-project-timer title="Time on the project as a whole, not one task: it goes on its General work task">▶ Start timer</button>' : ''}
+          <span class="head-stat"><span class="stat-label">Done</span><span data-progress></span></span>
         </div>
-        ${personal ? '' : `<div class="actions">
+        ${personal ? '' : `<div class="actions head-actions">
           <button class="btn btn-ghost btn-small" type="button" data-toggle-details aria-expanded="${page.m.details}">Details</button>
           ${canEditWork() ? `<button class="btn btn-small" type="button" data-edit>Edit</button>
-            ${campaign.is_template ? '' : '<button class="btn btn-small btn-ghost" type="button" data-save-template>Save as template</button>'}
-            <button class="btn btn-small btn-ghost" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>` : ''}
+            <details class="more-menu" data-more>
+              <summary class="btn btn-ghost btn-small" aria-label="More project actions" title="More">⋯</summary>
+              <div class="menu">
+                ${campaign.is_template ? '' : '<button class="menu-item" type="button" data-save-template>Save as template</button>'}
+                <button class="menu-item" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>
+              </div>
+            </details>` : ''}
         </div>`}
       </div>
       ${campaign.is_template ? `<div class="template-note" role="status">
@@ -119,8 +123,14 @@ export async function renderCampaign(el, id, openTask = null) {
       ${campaign.archived_at ? `<p class="archived-note" role="status"><strong>Archived</strong> on ${esc(fmtDate(campaign.archived_at.slice(0, 10)))}${personById(campaign.archived_by) ? ` by ${esc(personById(campaign.archived_by).name)}` : ''}.
         Kept for reference: its hours still count in Dashboards, but no new time can be logged on it.</p>` : ''}
       ${personal ? '' : `<div class="campaign-details" data-details ${page.m.details ? '' : 'hidden'}>
+        <div class="details-meta">
+          ${unitLine(campaign)}
+          <span>${esc(fmtDate(campaign.start_date))}${campaign.end_date ? ` to ${esc(fmtDate(campaign.end_date))}` : ''}</span>
+          <span>Planned ${fmtHours(campaign.planned_hours)}</span>
+          <span data-hours-split hidden></span>
+          ${campaign.asana_url ? `<a href="${esc(campaign.asana_url)}" target="_blank" rel="noopener" title="Imported from Asana: older and finished work stays there">Open in Asana ↗</a>` : ''}
+        </div>
         ${campaign.description ? `<p class="description">${esc(campaign.description)}</p>` : '<p class="muted">No description.</p>'}
-        <p class="muted small">${esc(fmtDate(campaign.start_date))}${campaign.end_date ? ` to ${esc(fmtDate(campaign.end_date))}` : ''} · Planned ${fmtHours(campaign.planned_hours)}</p>
         ${isAdmin() ? `
           <div class="details-actions">
             <button class="btn btn-small btn-danger-outline" type="button" data-delete hidden>Delete project</button>
@@ -128,17 +138,7 @@ export async function renderCampaign(el, id, openTask = null) {
           </div>` : ''}
       </div>`}
     </section>
-    <section class="section tasks-section">
-      ${canEditWork() && !campaign.archived_at ? `
-        <form class="quick-add-bar" data-quick-add>
-          <input class="quick-title" placeholder="Add a task and press Enter" aria-label="New task title" maxlength="300">
-          <select data-qa="assignee" aria-label="Assign new tasks to" ${personal ? 'hidden' : ''}>
-            <option value="">Unassigned</option>
-            ${options(Object.fromEntries(team.map(p => [p.id, p.id === state.me.id ? `${p.name} (me)` : p.name])), page.m.assignee)}
-          </select>
-          <input type="date" data-qa="due" value="${esc(page.m.due)}" aria-label="Due date for new tasks">
-          <button class="btn btn-primary" type="submit">Add</button>
-        </form>` : ''}
+    <section class="tasks-section">
       <div class="tasks-toolbar">
         <div class="view-switch" role="group" aria-label="View">
           <button type="button" data-view="list" title="Tasks grouped by section">List</button>
@@ -146,6 +146,7 @@ export async function renderCampaign(el, id, openTask = null) {
           <button type="button" data-view="board" title="Columns by section">Board</button>
           <button type="button" data-view="calendar" title="Tasks on their due date, month by month">Calendar</button>
         </div>
+        ${canAdd ? `<button class="btn btn-primary btn-small" type="button" data-open-add aria-expanded="${Boolean(page.m.adding)}" aria-controls="quick-add-${esc(id)}">+ Add task</button>` : ''}
         <input class="search" type="search" placeholder="Find a task" aria-label="Find a task" value="${esc(page.m.q)}" data-find>
         <select data-person aria-label="Show tasks for">
           <option value="">Everyone</option>
@@ -158,12 +159,24 @@ export async function renderCampaign(el, id, openTask = null) {
           ${options(DONE_FILTERS, savedDoneFilter())}
         </select>
         <span class="spacer"></span>
+        <div class="toolbar-tools" data-fold-slot></div>
         <div class="toolbar-tools">
         ${canEditWork() ? '<button class="btn btn-ghost btn-small" type="button" data-fields title="This project\'s own fields, such as an amount or a date">Fields</button>' : ''}
         ${canEditWork() && !campaign.is_template ? '<button class="btn btn-ghost btn-small" type="button" data-forms title="Forms anyone at DSD can send to this project">Forms</button>' : ''}
         ${canEditWork() && !campaign.is_template ? '<button class="btn btn-ghost btn-small" type="button" data-rules title="Automations: when something happens to a task, Atlas does what you choose">Rules</button>' : ''}
         </div>
       </div>
+      ${canAdd ? `
+        <form class="quick-add-bar" id="quick-add-${esc(id)}" data-quick-add ${page.m.adding ? '' : 'hidden'}>
+          <input class="quick-title" placeholder="New task: type a title and press Enter" aria-label="New task title" maxlength="300">
+          <select data-qa="assignee" aria-label="Assign new tasks to" ${personal ? 'hidden' : ''}>
+            <option value="">Unassigned</option>
+            ${options(Object.fromEntries(team.map(p => [p.id, p.id === state.me.id ? `${p.name} (me)` : p.name])), page.m.assignee)}
+          </select>
+          <input type="date" data-qa="due" value="${esc(page.m.due)}" aria-label="Due date for new tasks">
+          <button class="btn btn-primary" type="submit">Add</button>
+          <button class="btn btn-ghost" type="button" data-close-add>Close</button>
+        </form>` : ''}
       <div data-tasks></div>
     </section>`;
 
@@ -182,6 +195,30 @@ export async function renderCampaign(el, id, openTask = null) {
     openCampaignForm(null, saved => { window.location.hash = `/campaigns/${saved.id}`; }, { templateId: campaign.id }));
   el.querySelector('[data-save-template]')?.addEventListener('click', () => saveAsTemplate(campaign));
   const quick = el.querySelector('[data-quick-add]');
+  const openAdd = el.querySelector('[data-open-add]');
+  const showAdd = open => {
+    page.m.adding = open;
+    quick.hidden = !open;
+    openAdd.setAttribute('aria-expanded', String(open));
+    if (open) quick.querySelector('.quick-title').focus();
+    else openAdd.focus();
+    fitList(page);
+  };
+  openAdd?.addEventListener('click', () => showAdd(quick.hidden));
+  quick?.querySelector('[data-close-add]').addEventListener('click', () => showAdd(false));
+  quick?.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !quick.querySelector('.quick-title').value) { event.stopPropagation(); showAdd(false); }
+  });
+  // The ⋯ menu closes on a choice or a click anywhere else
+  const more = el.querySelector('[data-more]');
+  if (more) {
+    more.addEventListener('click', event => { if (event.target.closest('.menu-item')) more.open = false; });
+    const closeMore = event => {
+      if (!more.isConnected) return document.removeEventListener('click', closeMore);
+      if (!more.contains(event.target)) more.open = false;
+    };
+    document.addEventListener('click', closeMore);
+  }
   if (quick) {
     quick.addEventListener('submit', event => quickAdd(event, page));
     quick.querySelectorAll('[data-qa]').forEach(input => input.addEventListener('change', () => {
@@ -261,12 +298,15 @@ async function loadHours(page) {
   const planned = Number(campaign.planned_hours);
   const pct = planned > 0 ? hours / planned * 100 : null;
   const level = pct == null ? 'none' : pct > 100 ? 'critical' : pct >= 80 ? 'warning' : 'good';
-  const split = campaign.budget === 'shared' && hours
-    ? `<span class="muted small hours-split">${fmtHours(totals.education_hours)} Education · ${fmtHours(totals.planning_center_hours)} Planning Center</span>`
-    : '';
+  // Shared projects: the Education / Planning Center split is under Details
+  const split = el.querySelector('[data-hours-split]');
+  if (split) {
+    split.hidden = !(campaign.budget === 'shared' && hours);
+    split.textContent = `Logged: ${fmtHours(totals?.education_hours || 0)} Education · ${fmtHours(totals?.planning_center_hours || 0)} Planning Center`;
+  }
   el.querySelector('[data-hours]').innerHTML = `
     <span class="stat-value">${pct == null ? '' : meter(pct, level)}
-      <span class="${level === 'critical' ? 'over-plan' : ''}">${fmtHours(hours)}</span>${planned ? ` <span class="muted">of ${fmtHours(planned)}</span>` : ''}</span>${split}`;
+      <span class="${level === 'critical' ? 'over-plan' : ''}">${fmtHours(hours)}</span>${planned ? ` <span class="muted">of ${fmtHours(planned)}</span>` : ''}</span>`;
   const remove = el.querySelector('[data-delete]');
   if (remove) {
     remove.hidden = hours > 0;
@@ -303,6 +343,8 @@ function drawTasks(page) {
   if (bySection) page.m.section = '';
   drawSectionFilter(page, bySection);
   const container = el.querySelector('[data-tasks]');
+  // Collapse all / Expand all: only the List fills this (drawList)
+  el.querySelector('[data-fold-slot]').innerHTML = '';
   const subtasksOf = id => tasks.filter(t => t.parent_id === id);
   // Board and List always show their sections and + Add section, even
   // before there are tasks
@@ -710,6 +752,11 @@ function saveClosedSections(campaignId, closed) {
   } catch { /* not saved; fine */ }
 }
 
+const FOLD_ICONS = {
+  close: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 2.5 8 6l3.5-3.5M4.5 13.5 8 10l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  open: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 5.5 8 2l3.5 3.5M4.5 10.5 8 14l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+
 // The List fills the rest of the screen and scrolls inside, so its column
 // names (Task, Assignee, Due, the fields) stay pinned at the top (Carlota,
 // 25 Nov). Phones scroll the whole page instead (styles.css).
@@ -794,10 +841,6 @@ function drawList(page, container, main, subtasksOf) {
   const before = container.querySelector('.list-scroll');
   const place = before ? [before.scrollTop, before.scrollLeft] : null;
   container.innerHTML = `
-    ${sections.length > 1 && !filtering ? `<div class="section-fold-all">
-      <button class="btn btn-ghost btn-small" type="button" data-fold-all="close">Collapse all</button>
-      <button class="btn btn-ghost btn-small" type="button" data-fold-all="open">Expand all</button>
-    </div>` : ''}
     <div class="table-wrap list-scroll">
       <table class="table task-table">
         <thead>
@@ -842,7 +885,12 @@ function drawList(page, container, main, subtasksOf) {
     setOpen(body, body.classList.contains('is-closed'));
     remember();
   }));
-  container.querySelectorAll('[data-fold-all]').forEach(button => button.addEventListener('click', () => {
+  // Collapse all / Expand all sit in the toolbar, as two small icons
+  const foldSlot = page.el.querySelector('[data-fold-slot]');
+  foldSlot.innerHTML = sections.length > 1 && !filtering ? `
+    <button class="btn btn-ghost btn-small icon-only" type="button" data-fold-all="close" aria-label="Collapse all sections" title="Collapse all sections">${FOLD_ICONS.close}</button>
+    <button class="btn btn-ghost btn-small icon-only" type="button" data-fold-all="open" aria-label="Expand all sections" title="Expand all sections">${FOLD_ICONS.open}</button>` : '';
+  foldSlot.querySelectorAll('[data-fold-all]').forEach(button => button.addEventListener('click', () => {
     container.querySelectorAll('tbody[data-group]').forEach(body => setOpen(body, button.dataset.foldAll === 'open'));
     remember();
   }));
