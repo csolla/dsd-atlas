@@ -541,6 +541,12 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 .task-section-head { display: flex; align-items: center; gap: 8px; font-weight: 400; }
 .task-section-head h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
 .task-section-head .icon-btn { font-size: 16px; padding: 2px 6px; }
+/* Sections open and close in the List; a closed one keeps only its header */
+.section-toggle span { display: inline-block; transition: transform .15s; }
+tbody.is-closed .section-toggle span { transform: rotate(-90deg); }
+tbody.is-closed tr:not(.task-section-row) { display: none; }
+.section-fold-all { display: flex; justify-content: flex-end; gap: 4px; margin-bottom: 6px; }
+@media (prefers-reduced-motion: reduce) { .section-toggle span { transition: none; } }
 .task-section-head .icon-btn:disabled { opacity: 0.35; cursor: default; }
 .task-section-empty td { padding-top: 10px; padding-bottom: 10px; }
 /* Totals of number and money fields: one line per currency */

@@ -666,6 +666,21 @@ const STATUS_ORDER = Object.keys(TASK_STATUSES);
 // Grouped by section, in the project's section order. Tasks with no section
 // come first. Within a section: by status, then board order. Tasks can be
 // dragged from one section to another.
+// Closed sections in the List, per project, remembered in this browser
+// ('none' stands for No section)
+const CLOSED_KEY = 'closed-sections';
+function closedSections(campaignId) {
+  try { return new Set(JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}')[campaignId] || []); } catch { return new Set(); }
+}
+function saveClosedSections(campaignId, closed) {
+  try {
+    const all = JSON.parse(localStorage.getItem(CLOSED_KEY) || '{}');
+    if (closed.size) all[campaignId] = [...closed];
+    else delete all[campaignId];
+    localStorage.setItem(CLOSED_KEY, JSON.stringify(all));
+  } catch { /* not saved; fine */ }
+}
+
 function drawList(page, container, main, subtasksOf) {
   const sorted = [...main].sort((a, b) =>
     STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) || byPosition(a, b));
@@ -697,10 +712,16 @@ function drawList(page, container, main, subtasksOf) {
         }).join('')}
       </tr>`;
   };
+  // Sections open and close like Asana's. While searching or filtering,
+  // every section shows, so nothing found is hidden.
+  const closed = filtering ? new Set() : closedSections(page.campaign.id);
+  const key = g => g.id || 'none';
   const head = (g, i) => (sections.length ? `
     <tr class="task-section-row" data-section-head>
       <th colspan="${columns}" scope="colgroup">
         <div class="task-section-head">
+          ${filtering ? '' : `<button class="icon-btn section-toggle" type="button" data-section-toggle aria-expanded="${!closed.has(key(g))}"
+            aria-label="${closed.has(key(g)) ? 'Show' : 'Hide'} the tasks in ${esc(g.name)}" title="${closed.has(key(g)) ? 'Open' : 'Close'} this section"><span aria-hidden="true">▾</span></button>`}
           <h3>${esc(g.name)}</h3><span class="muted">${g.tasks.length}</span>
           <span class="spacer"></span>
           ${edit && g.id ? `
@@ -724,13 +745,17 @@ function drawList(page, container, main, subtasksOf) {
   const withTasks = groups.filter(g => g.tasks.length).length;
 
   container.innerHTML = `
+    ${sections.length > 1 && !filtering ? `<div class="section-fold-all">
+      <button class="btn btn-ghost btn-small" type="button" data-fold-all="close">Collapse all</button>
+      <button class="btn btn-ghost btn-small" type="button" data-fold-all="open">Expand all</button>
+    </div>` : ''}
     <div class="table-wrap">
       <table class="table task-table">
         <thead>
           <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th>Task</th><th>Assignee</th><th>Due</th><th>Status</th>${page.fields.map(f => `<th class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}">${esc(f.name)}</th>`).join('')}</tr>
         </thead>
         ${groups.map((g, i) => `
-          <tbody data-group="${esc(g.id)}">
+          <tbody data-group="${esc(g.id)}" class="${closed.has(key(g)) ? 'is-closed' : ''}">
             ${head(g, i)}
             ${g.tasks.map(row).join('')}
             ${summed && g.tasks.length ? totalRow(sections.length ? `Total · ${g.name}` : 'Total') : ''}
@@ -747,6 +772,28 @@ function drawList(page, container, main, subtasksOf) {
       </table>
     </div>
     ${edit && !filtering ? '<button class="btn btn-small task-section-new" type="button" data-section-new>+ Add section</button>' : ''}`;
+
+  // Open or close one section, or all of them, without redrawing
+  const setOpen = (body, open) => {
+    body.classList.toggle('is-closed', !open);
+    const button = body.querySelector('[data-section-toggle]');
+    if (!button) return;
+    const name = body.querySelector('.task-section-head h3')?.textContent || '';
+    button.setAttribute('aria-expanded', String(open));
+    button.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} the tasks in ${name}`);
+    button.title = `${open ? 'Close' : 'Open'} this section`;
+  };
+  const remember = () => saveClosedSections(page.campaign.id,
+    new Set([...container.querySelectorAll('tbody.is-closed')].map(b => b.dataset.group || 'none')));
+  container.querySelectorAll('[data-section-toggle]').forEach(button => button.addEventListener('click', () => {
+    const body = button.closest('tbody');
+    setOpen(body, body.classList.contains('is-closed'));
+    remember();
+  }));
+  container.querySelectorAll('[data-fold-all]').forEach(button => button.addEventListener('click', () => {
+    container.querySelectorAll('tbody[data-group]').forEach(body => setOpen(body, button.dataset.foldAll === 'open'));
+    remember();
+  }));
 
   container.querySelectorAll('tbody[data-group]').forEach(body => {
     const id = body.dataset.group;
