@@ -185,7 +185,7 @@ function renderShell() {
     <main class="page" id="page"></main>`;
 
   const button = app.querySelector('.user-button');
-  const menu = app.querySelector('.menu');
+  const menu = app.querySelector('.user-menu .menu');
   const setOpen = open => { menu.hidden = !open; button.setAttribute('aria-expanded', String(open)); };
   button.addEventListener('click', event => { event.stopPropagation(); setOpen(menu.hidden); });
   document.addEventListener('click', event => {
@@ -244,7 +244,7 @@ window.addEventListener('me-updated', () => {
   if (!button || !state.me) return;
   button.innerHTML = avatar(state.me, 32);
   button.title = state.me.name;
-  app.querySelector('.menu-head strong').textContent = state.me.name;
+  app.querySelector('.user-menu .menu-head strong').textContent = state.me.name;
 });
 
 function route() {
@@ -265,7 +265,7 @@ function route() {
 
   app.querySelectorAll('.nav-link').forEach(link =>
     link.classList.toggle('active', link.dataset.nav === match.r.nav));
-  app.querySelector('.menu')?.setAttribute('hidden', '');
+  app.querySelector('.user-menu .menu')?.setAttribute('hidden', '');
 
   // The task panel sits beside the page on wide screens, so close it when
   // going to another page (keeping the address just typed or clicked)
