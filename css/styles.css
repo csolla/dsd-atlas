@@ -1007,8 +1007,12 @@ a.week-pill:hover { border-color: var(--accent-bright); }
 
 /* Dashboards ----------------------------------------------------------------- */
 
-.dash-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
-.dash-controls input[type="month"] { min-height: 36px; }
+.dash-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-left: auto; }
+.dash-controls input[type="month"] { min-height: 30px; padding: 3px 8px; }
+.dash-controls .week-nav .btn-small { margin-left: 0; }
+.dash-controls .view-switch button { padding: 4px 12px; }
+body.presenting .dash-bar { position: static; border-bottom: 0; }
+body.presenting .dash-controls { margin-left: 0; }
 .dash-section { margin-bottom: 18px; }
 .dash-section > h2 { margin-bottom: 4px; }
 .dash-section > .muted { margin-bottom: 14px; }
@@ -1332,10 +1336,15 @@ th[aria-sort="ascending"] .sort-btn, th[aria-sort="descending"] .sort-btn { colo
 
 /* Dashboards: headlines, section menu, slides -------------------------------------- */
 
-.dash-menu {
-  position: sticky; top: 56px; z-index: 5; display: flex; gap: 4px; overflow-x: auto; margin: 0 -4px 16px; padding: 8px 4px;
-  background: var(--bg); border-bottom: 1px solid var(--border);
+.dash-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 8px; }
+.dash-period { color: var(--muted); font-size: 15px; font-weight: 550; }
+.dash-head .actions { align-self: center; }
+/* Pinned under the top bar: section links, then the period and budget */
+.dash-bar {
+  position: sticky; top: 56px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  margin: 0 -4px 16px; padding: 8px 4px; background: var(--bg); border-bottom: 1px solid var(--border);
 }
+.dash-menu { display: flex; gap: 4px; overflow-x: auto; flex: 1 1 auto; min-width: 0; scrollbar-width: none; }
 .dash-menu button { border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; padding: 4px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
 .dash-menu button:hover { background: var(--surface-2); color: var(--text); }
 .dash-section { scroll-margin-top: 120px; }
@@ -1465,7 +1474,9 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
   .my-task-campaign { flex-direction: column; align-items: stretch; gap: 0; }
   .my-task-campaign .campaign-name { max-width: none; }
   .budget-table input.budget-input { width: 80px; }
-  .dash-header .actions { flex-wrap: wrap; }
+  .dash-head .actions { flex-wrap: wrap; }
+  .dash-bar { position: static; }
+  .dash-controls { margin-left: 0; }
   .timer-bar { max-width: 46vw; padding-left: 10px; }
   .timer-label { display: none; }
   .bell-panel { position: fixed; left: 16px; right: 16px; top: 60px; width: auto; }

@@ -35,14 +35,15 @@ const sum = (list, field) => list.reduce((total, row) => total + Number(row[fiel
 // Internal hours of Marketing people (other teams' internal time isn't Marketing's)
 const marketingInternal = data => sum(data.entries.filter(e => isMarketingPerson(state.people.find(p => p.id === e.person_id))), 'internal_hours');
 
+// One header line (title, period, Excel / CSV / Present), then one pinned bar
+// with the section links and the period and budget controls (Carlota, 25 Nov)
 export async function renderDashboards(el, { present = false } = {}) {
   document.body.classList.toggle('presenting', present);
   el.innerHTML = `
-    <div class="page-header dash-header">
-      <div>
-        <h1>Dashboards</h1>
-        <p class="muted" data-period-label></p>
-      </div>
+    <div class="dash-head">
+      <h1>Dashboards</h1>
+      <span class="dash-period" data-period-label></span>
+      <span class="spacer"></span>
       <div class="actions">
         ${present
           ? '<a class="btn" href="#/dashboards">Exit present view</a>'
@@ -51,25 +52,27 @@ export async function renderDashboards(el, { present = false } = {}) {
              <a class="btn btn-primary" href="#/dashboards/present">Present</a>`}
       </div>
     </div>
-    <div class="dash-controls">
-      <div class="week-nav">
-        <button class="btn" type="button" data-month="-1" aria-label="Previous month">‹</button>
-        <input type="month" data-month-input value="${view.month}" aria-label="Month">
-        <button class="btn" type="button" data-month="1" aria-label="Next month">›</button>
-      </div>
-      <div class="view-switch" role="group" aria-label="Period">
-        <button type="button" data-mode="month" aria-pressed="${view.mode === 'month'}">Month</button>
-        <button type="button" data-mode="quarter" aria-pressed="${view.mode === 'quarter'}">This quarter</button>
-      </div>
-      <div class="view-switch" role="group" aria-label="Budget">
-        <button type="button" data-focus="" aria-pressed="${!view.focus}">Both budgets</button>
-        <button type="button" data-focus="education" aria-pressed="${view.focus === 'education'}">Education</button>
-        <button type="button" data-focus="planning_center" aria-pressed="${view.focus === 'planning_center'}">Planning Center</button>
+    <div class="dash-bar">
+      ${present ? '' : `<nav class="dash-menu" aria-label="Dashboard sections">
+        ${SECTIONS.map(sec => `<button type="button" data-jump="${sec.id}">${esc(sec.label)}</button>`).join('')}
+      </nav>`}
+      <div class="dash-controls">
+        <div class="week-nav">
+          <button class="btn btn-small" type="button" data-month="-1" aria-label="Previous month">‹</button>
+          <input type="month" data-month-input value="${view.month}" aria-label="Month">
+          <button class="btn btn-small" type="button" data-month="1" aria-label="Next month">›</button>
+        </div>
+        <div class="view-switch" role="group" aria-label="Period">
+          <button type="button" data-mode="month" aria-pressed="${view.mode === 'month'}">Month</button>
+          <button type="button" data-mode="quarter" aria-pressed="${view.mode === 'quarter'}">This quarter</button>
+        </div>
+        <div class="view-switch" role="group" aria-label="Budget">
+          <button type="button" data-focus="" aria-pressed="${!view.focus}">Both budgets</button>
+          <button type="button" data-focus="education" aria-pressed="${view.focus === 'education'}">Education</button>
+          <button type="button" data-focus="planning_center" aria-pressed="${view.focus === 'planning_center'}">Planning Center</button>
+        </div>
       </div>
     </div>
-    ${present ? '' : `<nav class="dash-menu" aria-label="Dashboard sections">
-      ${SECTIONS.map(sec => `<button type="button" data-jump="${sec.id}">${esc(sec.label)}</button>`).join('')}
-    </nav>`}
     <div data-dash><p class="muted">Loading figures…</p></div>`;
 
   const rerender = () => renderDashboards(el, { present });
