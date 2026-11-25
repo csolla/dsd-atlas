@@ -6,7 +6,7 @@ import { weekMinutes, weekStart, addDays } from '../time.js';
 import { availability, loadHolidays, loadTimeOff } from '../capacity.js';
 import { startTimer } from '../timer.js';
 import { esc, fmtDate, fmtHours, toast, errorMessage, TASK_STATUSES } from '../ui.js';
-import { unitLine } from '../departments.js';
+import { unitLine, departmentLine } from '../departments.js';
 import { openTaskPanel } from './task-panel.js';
 
 const SHOW_DONE_KEY = 'my-tasks-show-completed';
@@ -18,38 +18,36 @@ function savedShowDone() {
 
 
 // Home page: your own to-dos in a box at the top, then everything assigned
-// to you (tasks and subtasks) across projects
+// to you (tasks and subtasks) across projects. The header is one line
+// (title, counts, Show completed, this week's hours), like a project's.
 export async function renderMyTasks(el) {
   const page = { el, items: [], showDone: savedShowDone(), ticking: false, todosId: null };
 
   el.innerHTML = `
-    <div class="page-header my-tasks-header">
-      <div>
-        <h1>My tasks</h1>
-        <p class="task-summary" data-summary></p>
-      </div>
-      <a class="week-card" href="#/my-time" data-week-card title="Open My time">
+    <div class="mytasks-head">
+      <h1>My tasks</h1>
+      <p class="task-summary" data-summary></p>
+      <span class="spacer"></span>
+      <label class="toggle">
+        <input type="checkbox" data-show-done ${page.showDone ? 'checked' : ''}>
+        Show completed (last ${COMPLETED_DAYS} days)
+      </label>
+      <a class="week-pill" href="#/my-time" data-week-card title="Open My time">
         <span class="muted small">Logged this week</span>
         <strong data-week-hours>…</strong>
         <span class="mini-meter" aria-hidden="true"><span data-week-bar style="width:0%"></span></span>
       </a>
     </div>
-    <div class="list-toolbar">
-      <label class="toggle">
-        <input type="checkbox" data-show-done ${page.showDone ? 'checked' : ''}>
-        Show completed (last ${COMPLETED_DAYS} days)
-      </label>
-    </div>
     <section class="card todo-box" aria-labelledby="todo-box-title" data-todo-box hidden>
       <div class="todo-box-head">
         <h2 id="todo-box-title">My to-dos</h2>
         <span class="private-flag"><span aria-hidden="true">🔒</span> Only you can see these</span>
+        <form class="todo-add" data-todo-add>
+          <input class="quick-title" name="title" placeholder="Add a to-do and press Enter" aria-label="New to-do" maxlength="300">
+          <input type="date" name="due" aria-label="Due date (optional)">
+          <button class="btn btn-primary" type="submit">Add</button>
+        </form>
       </div>
-      <form class="todo-add" data-todo-add>
-        <input class="quick-title" name="title" placeholder="Add a to-do and press Enter" aria-label="New to-do" maxlength="300">
-        <input type="date" name="due" aria-label="Due date (optional)">
-        <button class="btn btn-primary" type="submit">Add</button>
-      </form>
       <ul class="my-task-list todo-list" data-todos></ul>
     </section>
     <h2 class="from-projects-title">From projects</h2>
@@ -136,7 +134,7 @@ function row(item, todo = false) {
         <span class="task-title">${item.parent ? '<span class="subtask-mark" title="Subtask" aria-label="Subtask">↳</span>' : ''}${esc(item.title)}</span>
         ${item.parent ? `<span class="parent-line">in ${esc(item.parent.title)}</span>` : ''}
       </div>
-      <div class="my-task-campaign">${todo ? '' : `
+      <div class="my-task-campaign" ${todo || !item.campaign ? '' : `title="${esc(item.campaign.name)} · ${esc(departmentLine(item.campaign))}"`}>${todo ? '' : `
         <span class="campaign-name">${esc(item.campaign?.name || '')}</span>
         ${item.campaign ? unitLine(item.campaign) : ''}`}
       </div>
