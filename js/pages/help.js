@@ -213,7 +213,7 @@ const SECTIONS = [
         <li>On My time, use ‹ and › to change week; <strong>This week</strong> jumps back.</li>
         <li>Start the week with <strong>Copy last week's rows</strong> or a <strong>suggested row</strong> (your tasks in progress or due this week). For anything else, click <strong>Add row</strong> and pick the project and its task (or <strong>Internal</strong>, which has no task).</li>
         <li>Type hours as <code>1.5</code> or <code>1:30</code>. It saves straight away; clear a box to delete it. Enter moves down, arrow keys move between days.</li>
-        <li>The <strong>Logged this week</strong> card shows your hours against your expected week. Bank holidays and days off are marked in the grid.</li>
+        <li><strong>Logged this week</strong>, at the top right, shows your hours against your expected week. Bank holidays and days off are marked in the grid.</li>
       </ol>
       <h3>Timer</h3>
       <ol>

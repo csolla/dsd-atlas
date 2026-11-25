@@ -52,6 +52,8 @@ function canEdit(page) {
 
 const personOf = page => state.people.find(p => p.id === page.personId);
 
+// One header line (title, the tabs, this week's hours), then one line with
+// the week and the Timesheet's controls (Carlota, 25 Nov)
 export async function renderMyTime(el) {
   const page = {
     el,
@@ -68,37 +70,36 @@ export async function renderMyTime(el) {
   if (view.tab === 'team' && !isAdmin()) view.tab = 'sheet';
 
   el.innerHTML = `
-    <div class="page-header my-tasks-header">
-      <div>
-        <h1 data-title>My time</h1>
-        <div class="week-nav time-week-nav">
-          <button class="btn btn-small" type="button" data-week="-7" aria-label="Previous week">‹</button>
-          <button class="btn btn-small" type="button" data-week="0">This week</button>
-          <button class="btn btn-small" type="button" data-week="7" aria-label="Next week">›</button>
-          <strong data-week-label></strong>
-        </div>
-      </div>
-      <div class="week-card" data-week-card>
+    <div class="mytime-head">
+      <h1 data-title>My time</h1>
+      <nav class="tabs" aria-label="My time sections">
+        <button type="button" class="tab" data-tab="sheet">Timesheet</button>
+        <button type="button" class="tab" data-tab="off">Time off</button>
+        ${isAdmin() ? '<button type="button" class="tab" data-tab="team">Team time</button>' : ''}
+      </nav>
+      <span class="spacer"></span>
+      <div class="week-pill" data-week-card>
         <span class="muted small" data-week-card-label>Logged this week</span>
         <strong data-week-hours>…</strong>
         <span class="mini-meter" aria-hidden="true"><span data-week-bar style="width:0%"></span></span>
       </div>
     </div>
-    <nav class="tabs" aria-label="My time sections">
-      <button type="button" class="tab" data-tab="sheet">Timesheet</button>
-      <button type="button" class="tab" data-tab="off">Time off</button>
-      ${isAdmin() ? '<button type="button" class="tab" data-tab="team">Team time</button>' : ''}
-    </nav>
+    <div class="time-controls" data-time-bar>
+      <div class="week-nav time-week-nav">
+        <button class="btn btn-small" type="button" data-week="-7" aria-label="Previous week">‹</button>
+        <button class="btn btn-small" type="button" data-week="0">This week</button>
+        <button class="btn btn-small" type="button" data-week="7" aria-label="Next week">›</button>
+        <strong data-week-label></strong>
+      </div>
+      <label class="inline-field" data-sheet-only>Person
+        <select data-person>${options(Object.fromEntries(people.map(p => [p.id, p.name])), page.personId)}</select>
+      </label>
+      <label class="toggle" data-sheet-only><input type="checkbox" data-weekend ${page.showWeekend ? 'checked' : ''}> Show weekend</label>
+      <span class="spacer"></span>
+      <div class="actions" data-actions data-sheet-only></div>
+    </div>
 
     <div data-panel="sheet">
-      <div class="time-controls">
-        <label class="inline-field">Person
-          <select data-person>${options(Object.fromEntries(people.map(p => [p.id, p.name])), page.personId)}</select>
-        </label>
-        <label class="toggle"><input type="checkbox" data-weekend ${page.showWeekend ? 'checked' : ''}> Show weekend</label>
-        <span class="spacer"></span>
-        <div class="actions" data-actions></div>
-      </div>
       <div class="suggestions" data-suggestions></div>
       <div data-grid><p class="muted">Loading…</p></div>
       <section class="section">
@@ -144,6 +145,9 @@ function showTab(page, tab) {
     button.setAttribute('aria-pressed', String(button.dataset.tab === tab));
   });
   page.el.querySelectorAll('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== tab; });
+  // Time off has its own month calendar, so no week bar; Team time keeps the week only
+  page.el.querySelector('[data-time-bar]').hidden = tab === 'off';
+  page.el.querySelectorAll('[data-sheet-only]').forEach(item => { item.hidden = tab !== 'sheet'; });
   if (tab === 'team') drawTeam(page);
   if (tab === 'off') drawCalendar(page);
 }

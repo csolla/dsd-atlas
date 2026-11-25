@@ -799,20 +799,12 @@ tbody.is-closed tr:not(.task-section-row) { display: none; }
 .task-summary { display: flex; flex-wrap: wrap; gap: 6px; }
 .summary-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 600; }
 .summary-chip.is-danger { background: var(--danger-bg); color: var(--danger); }
-/* My time's header and its Logged this week card */
-.my-tasks-header { align-items: center; }
-.week-card {
-  display: flex; flex-direction: column; gap: 4px; min-width: 190px; padding: 10px 14px; border: 1px solid var(--border);
-  border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); text-decoration: none; color: var(--text);
-}
-.week-card strong { font-family: var(--font-display); font-size: 18px; }
-.week-card .mini-meter { width: 100%; margin: 0; }
-/* My tasks: this week's hours on one line, links to My time */
+/* This week's hours on one line (My tasks, where it links to My time, and My time) */
 .week-pill {
   display: inline-flex; align-items: center; gap: 10px; padding: 6px 12px; border: 1px solid var(--border);
   border-radius: 999px; background: var(--surface); text-decoration: none; color: var(--text); white-space: nowrap;
 }
-.week-pill:hover { border-color: var(--accent-bright); }
+a.week-pill:hover { border-color: var(--accent-bright); }
 .week-pill strong { font-family: var(--font-display); font-size: 14px; }
 .week-pill .mini-meter { width: 72px; margin: 0; }
 .subtask.is-highlight { background: var(--signal-soft); border-radius: 6px; box-shadow: inset 3px 0 0 var(--signal); }
@@ -1246,11 +1238,12 @@ mark { background: var(--signal-soft); color: var(--text); font-weight: 650; bor
 
 /* Campaigns list ----------------------------------------------------------------- */
 
-/* Projects: one header line with the title, the tabs and the New buttons */
-.projects-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-.projects-head h1 { padding-bottom: 6px; }
-.projects-head .tabs { border-bottom: 0; margin-bottom: 0; align-self: flex-end; }
-.projects-head .page-actions { padding-bottom: 8px; }
+/* Projects and My time: one header line with the title, the tabs, then
+   the New buttons (Projects) or this week's hours (My time) */
+.projects-head, .mytime-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.projects-head h1, .mytime-head h1 { padding-bottom: 6px; }
+.projects-head .tabs, .mytime-head .tabs { border-bottom: 0; margin-bottom: 0; align-self: flex-end; }
+.projects-head .page-actions, .mytime-head .week-pill { margin-bottom: 8px; }
 .filters .toggle { padding: 0 6px; }
 button.tab { background: none; border: 0; border-bottom: 2px solid transparent; font: inherit; cursor: pointer; }
 .tab-count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; text-align: center; }
@@ -1319,7 +1312,6 @@ th[aria-sort="ascending"] .sort-btn, th[aria-sort="descending"] .sort-btn { colo
 
 /* My time (timesheet) ----------------------------------------------------------- */
 
-.time-week-nav { margin-top: 8px; }
 .time-week-nav .btn-small { margin-left: 0; }
 [data-panel="team"] .team-time { margin-top: 0; padding-top: 0; border-top: 0; }
 .time-controls .actions { flex-wrap: wrap; }
@@ -1468,8 +1460,6 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
   .my-task-status { grid-column: 3; grid-row: 2; justify-self: end; }
   .my-task .due { grid-column: 2; text-align: left; }
   .row-timer { grid-column: 3; grid-row: 3; justify-self: end; opacity: 1; }
-  .my-tasks-header { align-items: stretch; }
-  .week-card { min-width: 0; }
   .mytasks-head .spacer { display: none; }
   .todo-add { margin-left: 0; flex-basis: 100%; }
   .my-task-campaign { flex-direction: column; align-items: stretch; gap: 0; }
@@ -1505,8 +1495,8 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
     content: attr(data-label); display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px;
   }
   .campaign-table tbody tr:hover { background: transparent; }
-  .projects-head .tab { padding: 8px 10px; }
-  .projects-head .tabs { flex-basis: 100%; overflow-x: auto; }
+  .projects-head .tab, .mytime-head .tab { padding: 8px 10px; }
+  .projects-head .tabs, .mytime-head .tabs { flex-basis: 100%; overflow-x: auto; }
   .help-toc { position: static; }
   .time-controls { gap: 10px; }
   .week-nav strong { width: 100%; margin: 4px 0 0; }
