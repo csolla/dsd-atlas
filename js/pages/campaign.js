@@ -81,6 +81,8 @@ export async function renderCampaign(el, id, openTask = null) {
   const access = campaign.private ? await loadAccess(id).catch(() => []) : [];
   const team = projectAudience(campaign, access);
 
+  // The view switch comes first in the toolbar, so it stays in the same place
+  // whichever filters a view shows
   el.innerHTML = `
     ${personal ? '<a class="back-link" href="#/my-tasks">← My tasks</a>' : '<a class="back-link" href="#/campaigns">← Projects</a>'}
     <section class="card campaign-summary">
@@ -138,6 +140,12 @@ export async function renderCampaign(el, id, openTask = null) {
           <button class="btn btn-primary" type="submit">Add</button>
         </form>` : ''}
       <div class="tasks-toolbar">
+        <div class="view-switch" role="group" aria-label="View">
+          <button type="button" data-view="list" title="Tasks grouped by section">List</button>
+          <button type="button" data-view="kanban" title="Columns by status: To do, In progress, In review, Done">Kanban</button>
+          <button type="button" data-view="board" title="Columns by section">Board</button>
+          <button type="button" data-view="calendar" title="Tasks on their due date, month by month">Calendar</button>
+        </div>
         <input class="search" type="search" placeholder="Find a task" aria-label="Find a task" value="${esc(page.m.q)}" data-find>
         <select data-person aria-label="Show tasks for">
           <option value="">Everyone</option>
@@ -150,14 +158,10 @@ export async function renderCampaign(el, id, openTask = null) {
           ${options(DONE_FILTERS, savedDoneFilter())}
         </select>
         <span class="spacer"></span>
+        <div class="toolbar-tools">
         ${canEditWork() ? '<button class="btn btn-ghost btn-small" type="button" data-fields title="This project\'s own fields, such as an amount or a date">Fields</button>' : ''}
         ${canEditWork() && !campaign.is_template ? '<button class="btn btn-ghost btn-small" type="button" data-forms title="Forms anyone at DSD can send to this project">Forms</button>' : ''}
         ${canEditWork() && !campaign.is_template ? '<button class="btn btn-ghost btn-small" type="button" data-rules title="Automations: when something happens to a task, Atlas does what you choose">Rules</button>' : ''}
-        <div class="view-switch" role="group" aria-label="View">
-          <button type="button" data-view="list" title="Tasks grouped by section">List</button>
-          <button type="button" data-view="kanban" title="Columns by status: To do, In progress, In review, Done">Kanban</button>
-          <button type="button" data-view="board" title="Columns by section">Board</button>
-          <button type="button" data-view="calendar" title="Tasks on their due date, month by month">Calendar</button>
         </div>
       </div>
       <div data-tasks></div>
@@ -724,7 +728,7 @@ function drawList(page, container, main, subtasksOf) {
     return `
       <tr data-id="${esc(task.id)}" class="clickable ${task.status === 'done' ? 'is-done' : ''}">
         <td class="tick-col"><input type="checkbox" data-done ${task.status === 'done' ? 'checked' : ''} aria-label="Done"></td>
-        <td><span class="task-title">${esc(task.title)}</span> ${subtaskCount(subtasksOf(task.id))} ${activityCounts(page, task.id)}</td>
+        <td class="task-col"><span class="task-title">${esc(task.title)}</span> ${subtaskCount(subtasksOf(task.id))} ${activityCounts(page, task.id)}</td>
         <td>${assignee ? `<span class="person">${avatar(assignee, 24)}${esc(assignee.name)}</span>` : `<span class="person">${assigneeBadge(task)}<span class="muted">Unassigned</span></span>`}${page.campaign.is_template && task.template_role ? ` <span class="tag role-tag" title="Role: in a project made from this template, this goes to the person picked for it">${esc(task.template_role)}</span>` : ''}</td>
         <td class="nowrap">${dueLabel(task) || '<span class="muted">—</span>'}</td>
         ${page.fields.map(f => {
@@ -777,7 +781,7 @@ function drawList(page, container, main, subtasksOf) {
     <div class="table-wrap">
       <table class="table task-table">
         <thead>
-          <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th>Task</th><th>Assignee</th><th>Due</th>${page.fields.map(f => `<th class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}">${esc(f.name)}</th>`).join('')}</tr>
+          <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th class="task-col">Task</th><th>Assignee</th><th>Due</th>${page.fields.map(f => `<th class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}">${esc(f.name)}</th>`).join('')}</tr>
         </thead>
         ${groups.map((g, i) => `
           <tbody data-group="${esc(g.id)}" class="${closed.has(key(g)) ? 'is-closed' : ''}">

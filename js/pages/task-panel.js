@@ -27,6 +27,8 @@ export async function openTaskPanel(taskId, { highlight = null } = {}) {
   panel.setAttribute('aria-label', 'Task');
   panel.innerHTML = '<p class="muted panel-loading">Loading task…</p>';
   document.body.append(backdrop, panel);
+  // On wide screens the page makes room for the panel (styles.css)
+  document.body.classList.add('panel-open');
   requestAnimationFrame(() => panel.classList.add('open'));
   backdrop.addEventListener('click', closeTaskPanel);
 
@@ -62,13 +64,15 @@ export async function openTaskPanel(taskId, { highlight = null } = {}) {
   loadHours();
 }
 
-export function closeTaskPanel() {
+// keepAddress: leave the address alone (the app is already going to a new page)
+export function closeTaskPanel({ keepAddress = false } = {}) {
   if (!current) return;
   const { panel, backdrop } = current;
   current = null;
   setMentionAudience(null);
+  document.body.classList.remove('panel-open');
   // Opened from a task link: go back to the campaign's own address (no reload)
-  if (/^#\/campaigns\/[0-9a-f-]{36}\/tasks\//.test(window.location.hash)) {
+  if (!keepAddress && /^#\/campaigns\/[0-9a-f-]{36}\/tasks\//.test(window.location.hash)) {
     history.replaceState(null, '', window.location.hash.replace(/\/tasks\/[0-9a-f-]{36}$/, ''));
   }
   panel.classList.remove('open');

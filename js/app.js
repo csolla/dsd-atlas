@@ -18,6 +18,7 @@ import { renderHelp } from './pages/help.js';
 import { renderSearch, searchHref } from './pages/search.js';
 import { renderForms, renderForm } from './pages/forms.js';
 import { mountSearchSuggestions } from './search-suggest.js';
+import { closeTaskPanel } from './pages/task-panel.js';
 
 const ALL = ['admin', 'member', 'director'];
 const WORK = ['admin', 'member'];
@@ -27,9 +28,10 @@ const ROUTES = [
   { path: /^\/todos$/, roles: WORK, redirect: '/my-tasks' },
   { path: /^\/my-tasks$/, roles: WORK, nav: 'my-tasks', render: renderMyTasks },
   { path: /^\/campaigns$/, roles: WORK, nav: 'campaigns', render: renderCampaigns },
-  { path: /^\/campaigns\/([0-9a-f-]{36})$/, roles: WORK, nav: 'campaigns', render: (el, id) => renderCampaign(el, id) },
+  // wide: the page uses the whole screen (a project's List, Board and Calendar need it)
+  { path: /^\/campaigns\/([0-9a-f-]{36})$/, roles: WORK, nav: 'campaigns', wide: true, render: (el, id) => renderCampaign(el, id) },
   // A shared task link: the campaign with that task open
-  { path: /^\/campaigns\/([0-9a-f-]{36})\/tasks\/([0-9a-f-]{36})$/, roles: WORK, nav: 'campaigns', render: (el, id, task) => renderCampaign(el, id, task) },
+  { path: /^\/campaigns\/([0-9a-f-]{36})\/tasks\/([0-9a-f-]{36})$/, roles: WORK, nav: 'campaigns', wide: true, render: (el, id, task) => renderCampaign(el, id, task) },
   { path: /^\/my-time$/, roles: WORK, nav: 'my-time', render: renderMyTime },
   { path: /^\/forms$/, roles: ALL, nav: 'forms', render: renderForms },
   { path: /^\/forms\/([0-9a-f-]{36})$/, roles: ALL, nav: 'forms', render: (el, id) => renderForm(el, id) },
@@ -262,9 +264,15 @@ function route() {
     link.classList.toggle('active', link.dataset.nav === match.r.nav));
   app.querySelector('.menu')?.setAttribute('hidden', '');
 
+  // The task panel sits beside the page on wide screens, so close it when
+  // going to another page (keeping the address just typed or clicked)
+  closeTaskPanel({ keepAddress: true });
+
   // A fresh element per visit, so a page's live-update listeners stop once it's left
   const view = document.createElement('div');
-  document.getElementById('page').replaceChildren(view);
+  const main = document.getElementById('page');
+  main.classList.toggle('page-wide', Boolean(match.r.wide));
+  main.replaceChildren(view);
   window.scrollTo(0, 0);
   match.r.render(view, ...match.m.slice(1));
 }

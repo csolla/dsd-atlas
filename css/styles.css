@@ -55,6 +55,7 @@
   --welcome-line: rgba(255, 255, 255, 0.35);
 
   --radius: 10px;
+  --panel-width: 560px;     /* the task side panel */
   --font: 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color-scheme: light;
@@ -403,7 +404,16 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 
 /* Page layout -------------------------------------------------------------- */
 
-.page { max-width: 1200px; margin: 0 auto; padding: 28px 20px 64px; }
+.page { max-width: 1360px; margin: 0 auto; padding: 28px 28px 64px; transition: margin 0.2s ease; }
+/* Project pages use the whole screen: List columns, Board and Calendar need it */
+.page-wide { max-width: none; }
+/* Wide screens: the task panel sits beside the page instead of over it, so
+   the list stays readable and another task is one click away (like Asana) */
+@media (min-width: 1280px) {
+  .panel-backdrop { display: none; }
+  body.panel-open .page { margin-right: var(--panel-width); }
+}
+@media (prefers-reduced-motion: reduce) { .page { transition: none; } }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .page-header .muted { margin-top: 4px; }
 .section { margin-top: 28px; }
@@ -523,7 +533,12 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.tasks-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.tasks-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.tasks-toolbar .view-switch { margin-right: 4px; }
+.tasks-toolbar select { max-width: 200px; }
+/* Fields, Forms and Rules stay together when the toolbar wraps */
+.toolbar-tools { display: flex; align-items: center; }
+.toolbar-tools .btn-small { margin-left: 0; }
 .tasks-toolbar h2 { margin: 0; }
 .quick-add { flex: 1; }
 .quick-add input { width: 100%; }
@@ -651,7 +666,7 @@ tbody.is-closed tr:not(.task-section-row) { display: none; }
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(560px, 100vw);
+  width: min(var(--panel-width), 100vw);
   background: var(--surface);
   border-left: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
@@ -902,6 +917,8 @@ tbody.is-closed tr:not(.task-section-row) { display: none; }
 .multi-choice { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 0; }
 .multi-choice-item { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 .task-table .field-col { white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+/* Task names keep a readable width; extra field columns scroll sideways */
+.task-table .task-col { min-width: 280px; }
 .task-table .field-cell { padding-top: 6px; padding-bottom: 6px; cursor: default; }
 .field-cell input, .field-cell select { min-height: 30px; padding: 3px 8px; }
 .field-cell input[type="text"], .field-cell.field-person select, .field-cell.field-choice select { width: 170px; }
@@ -1250,7 +1267,7 @@ th[aria-sort="ascending"] .sort-btn, th[aria-sort="descending"] .sort-btn { colo
 .details-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
 .details-actions .btn-small { margin-left: 0; }
 
-.tasks-section { margin-top: 18px; }
+.tasks-section { margin-top: 14px; }
 .quick-add-bar { display: flex; gap: 8px; margin-bottom: 10px; }
 .quick-add-bar .quick-title { flex: 1; min-width: 0; }
 .quick-add-bar select { max-width: 200px; }
@@ -1435,6 +1452,7 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
   .quick-add-bar .quick-title { flex-basis: 100%; }
   .quick-add-bar select, .quick-add-bar input[type=date] { flex: 1; max-width: none; }
   .tasks-toolbar .search { flex: 1 1 100%; }
+  .tasks-toolbar select { flex: 1 1 140px; min-width: 0; max-width: none; }
   /* Campaigns: each row becomes a card */
   .campaign-table thead { display: none; }
   .campaign-table, .campaign-table tbody { display: block; }

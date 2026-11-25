@@ -35,6 +35,8 @@ All five build milestones are complete (October 2026). The original PRD, milesto
 - When embedding a subtask's parent task in a Supabase request, name it by column (`parent:parent_id(...)`), not by constraint name.
 
 <!-- bm-design-system:start -->
+- **Layout (Carlota, 25 Nov):** pages are up to 1360 px wide (`.page`); routes with `wide: true` in `js/app.js` (the project page) use the whole screen (`.page-wide`). On screens 1280 px and wider the task panel sits beside the page instead of over it: no dimmed backdrop, `body.panel-open` gives the page a right margin of `--panel-width`, the list stays clickable, and `route()` closes the panel when going to another page (`closeTaskPanel({ keepAddress: true })`). In a project's toolbar the view switch comes first so it never moves; Fields / Forms / Rules sit together in `.toolbar-tools`. The List's Task column keeps at least 280 px (`.task-col`); extra field columns scroll sideways.
+
 ## Design system
 
 The tool's look is defined once, adapted from the BM design system (the BM skill itself needs React + Tailwind, which this tool doesn't use). The live reference is **Design system** in the menu under your photo (Admin only; `#/design-system`, `js/pages/design-system.js`).
