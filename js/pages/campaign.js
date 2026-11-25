@@ -144,6 +144,9 @@ export async function renderCampaign(el, id, openTask = null) {
           ${options(Object.fromEntries(team.filter(p => p.id !== state.me.id).map(p => [p.id, p.name])), page.m.person)}
         </select>
         <select data-section-filter aria-label="Show section" hidden></select>
+        <select data-done-filter aria-label="Which tasks to show" hidden>
+          ${options(DONE_FILTERS, savedDoneFilter())}
+        </select>
         <span class="spacer"></span>
         ${canEditWork() ? '<button class="btn btn-ghost btn-small" type="button" data-fields title="This project\'s own fields, such as an amount or a date">Fields</button>' : ''}
         <div class="view-switch" role="group" aria-label="View">
@@ -179,6 +182,10 @@ export async function renderCampaign(el, id, openTask = null) {
   el.querySelector('[data-find]').addEventListener('input', event => { page.m.q = event.target.value; drawTasks(page); });
   el.querySelector('[data-person]').addEventListener('change', event => { page.m.person = event.target.value; drawTasks(page); });
   el.querySelector('[data-section-filter]').addEventListener('change', event => { page.m.section = event.target.value; drawTasks(page); });
+  el.querySelector('[data-done-filter]').addEventListener('change', event => {
+    try { localStorage.setItem(DONE_FILTER_KEY, event.target.value); } catch { /* not saved; fine */ }
+    drawTasks(page);
+  });
   el.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
     page.view = button.dataset.view;
     page.m.view = page.view;
@@ -667,6 +674,16 @@ const STATUS_ORDER = Object.keys(TASK_STATUSES);
 // Grouped by section, in the project's section order. Tasks with no section
 // come first. Within a section: by status, then board order. Tasks can be
 // dragged from one section to another.
+// The List's "which tasks" filter, like Asana's, remembered in this browser
+const DONE_FILTER_KEY = 'list-done-filter';
+const DONE_FILTERS = { all: 'All tasks', open: 'Incomplete tasks', done: 'Completed tasks' };
+function savedDoneFilter() {
+  try {
+    const value = localStorage.getItem(DONE_FILTER_KEY);
+    return value in DONE_FILTERS ? value : 'all';
+  } catch { return 'all'; }
+}
+
 // Closed sections in the List, per project, remembered in this browser
 // ('none' stands for No section)
 const CLOSED_KEY = 'closed-sections';
@@ -683,7 +700,8 @@ function saveClosedSections(campaignId, closed) {
 }
 
 function drawList(page, container, main, subtasksOf) {
-  const sorted = [...main].sort((a, b) =>
+  const show = savedDoneFilter();
+  const sorted = main.filter(t => show === 'all' || (show === 'done') === (t.status === 'done')).sort((a, b) =>
     STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) || byPosition(a, b));
   const { sections } = page;
   const filtering = Boolean(page.m.q.trim() || page.m.person || page.m.section);
@@ -760,7 +778,7 @@ function drawList(page, container, main, subtasksOf) {
             ${head(g, i)}
             ${g.tasks.map(row).join('')}
             ${summed && g.tasks.length ? totalRow(sections.length ? `Total · ${g.name}` : 'Total') : ''}
-            ${!g.tasks.length ? `<tr class="task-section-empty" data-placeholder><td colspan="${columns}" class="muted small">${sections.length ? 'No tasks in this section yet.' : 'No tasks yet.'}${edit && sections.length ? ' Drag one here or add one below.' : ''}</td></tr>` : ''}
+            ${!g.tasks.length ? `<tr class="task-section-empty" data-placeholder><td colspan="${columns}" class="muted small">${show === 'open' ? 'No incomplete tasks here.' : show === 'done' ? 'No completed tasks here.' : sections.length ? 'No tasks in this section yet.' : 'No tasks yet.'}${edit && sections.length && show === 'all' ? ' Drag one here or add one below.' : ''}</td></tr>` : ''}
             ${edit && sections.length && !page.campaign.archived_at ? `
               <tr class="task-section-add" data-placeholder><td colspan="${columns}">
                 <form class="column-add" data-section-add="${esc(g.id)}">
@@ -958,6 +976,7 @@ async function setStatus(page, task, status) {
 
 // The section filter, shown once the project has sections
 function drawSectionFilter(page, bySection = false) {
+  page.el.querySelector('[data-done-filter]').hidden = page.view !== 'list';
   const select = page.el.querySelector('[data-section-filter]');
   if (page.m.section && page.m.section !== 'none' && !page.sections.some(s => s.id === page.m.section)) page.m.section = '';
   select.hidden = !page.sections.length || bySection;
