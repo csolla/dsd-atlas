@@ -172,6 +172,7 @@ export async function renderCampaign(el, id, openTask = null) {
     page.m.details = !page.m.details;
     event.currentTarget.setAttribute('aria-expanded', String(page.m.details));
     el.querySelector('[data-details]').hidden = !page.m.details;
+    fitList(page);
   });
   el.querySelector('[data-edit]')?.addEventListener('click', () =>
     openCampaignForm(campaign, () => renderCampaign(el, id)));
@@ -709,6 +710,22 @@ function saveClosedSections(campaignId, closed) {
   } catch { /* not saved; fine */ }
 }
 
+// The List fills the rest of the screen and scrolls inside, so its column
+// names (Task, Assignee, Due, the fields) stay pinned at the top (Carlota,
+// 25 Nov). Phones scroll the whole page instead (styles.css).
+function fitList(page) {
+  const scroller = page.el.querySelector('.list-scroll');
+  if (!scroller) return;
+  if (window.matchMedia('(max-width: 720px)').matches) { scroller.style.maxHeight = ''; return; }
+  const top = scroller.getBoundingClientRect().top + window.scrollY;
+  const after = scroller.parentElement.querySelector('.task-section-new')?.offsetHeight || 0;
+  scroller.style.maxHeight = `${Math.max(360, window.innerHeight - top - after - 24)}px`;
+  if (!page.fitting) {
+    page.fitting = () => (page.el.isConnected ? fitList(page) : window.removeEventListener('resize', page.fitting));
+    window.addEventListener('resize', page.fitting);
+  }
+}
+
 function drawList(page, container, main, subtasksOf) {
   const show = savedDoneFilter();
   const sorted = main.filter(t => show === 'all' || (show === 'done') === (t.status === 'done')).sort((a, b) =>
@@ -773,12 +790,15 @@ function drawList(page, container, main, subtasksOf) {
     </tr>`;
   const withTasks = groups.filter(g => g.tasks.length).length;
 
+  // Keep the reader's place when the List redraws (a live update, a tick)
+  const before = container.querySelector('.list-scroll');
+  const place = before ? [before.scrollTop, before.scrollLeft] : null;
   container.innerHTML = `
     ${sections.length > 1 && !filtering ? `<div class="section-fold-all">
       <button class="btn btn-ghost btn-small" type="button" data-fold-all="close">Collapse all</button>
       <button class="btn btn-ghost btn-small" type="button" data-fold-all="open">Expand all</button>
     </div>` : ''}
-    <div class="table-wrap">
+    <div class="table-wrap list-scroll">
       <table class="table task-table">
         <thead>
           <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th class="task-col">Task</th><th>Assignee</th><th>Due</th>${page.fields.map(f => `<th class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}">${esc(f.name)}</th>`).join('')}</tr>
@@ -801,6 +821,9 @@ function drawList(page, container, main, subtasksOf) {
       </table>
     </div>
     ${edit && !filtering ? '<button class="btn btn-small task-section-new" type="button" data-section-new>+ Add section</button>' : ''}`;
+  const scroller = container.querySelector('.list-scroll');
+  fitList(page);
+  if (place) [scroller.scrollTop, scroller.scrollLeft] = place;
 
   // Open or close one section, or all of them, without redrawing
   const setOpen = (body, open) => {

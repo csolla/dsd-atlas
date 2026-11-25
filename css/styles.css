@@ -917,6 +917,11 @@ tbody.is-closed tr:not(.task-section-row) { display: none; }
 .multi-choice { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 6px 0; }
 .multi-choice-item { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 .task-table .field-col { white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+/* The List scrolls inside its box (height set by fitList in campaign.js), with
+   the column names pinned at the top and the all-sections total at the bottom */
+.list-scroll { overflow: auto; }
+.list-scroll .task-table thead th { position: sticky; top: 0; z-index: 3; box-shadow: inset 0 -1px 0 var(--border); }
+.list-scroll .task-table tfoot td { position: sticky; bottom: 0; z-index: 2; }
 /* Task names keep a readable width; extra field columns scroll sideways */
 .task-table .task-col { min-width: 280px; }
 .task-table .field-cell { padding-top: 6px; padding-bottom: 6px; cursor: default; }
