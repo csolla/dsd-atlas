@@ -703,7 +703,6 @@ function drawList(page, container, main, subtasksOf) {
         <td><span class="task-title">${esc(task.title)}</span> ${subtaskCount(subtasksOf(task.id))} ${activityCounts(page, task.id)}</td>
         <td>${assignee ? `<span class="person">${avatar(assignee, 24)}${esc(assignee.name)}</span>` : `<span class="person">${assigneeBadge(task)}<span class="muted">Unassigned</span></span>`}${page.campaign.is_template && task.template_role ? ` <span class="tag role-tag" title="Role: in a project made from this template, this goes to the person picked for it">${esc(task.template_role)}</span>` : ''}</td>
         <td class="nowrap">${dueLabel(task) || '<span class="muted">—</span>'}</td>
-        <td><select data-status aria-label="Status">${options(TASK_STATUSES, task.status)}</select></td>
         ${page.fields.map(f => {
           const value = page.values[task.id]?.[f.id];
           // Editors fill fields right in the List; others see the values
@@ -734,13 +733,14 @@ function drawList(page, container, main, subtasksOf) {
       </th>
     </tr>` : '');
   const firstSection = groups.findIndex(g => g.id);
-  const columns = 5 + page.fields.length;
+  // No Status column: Kanban shows status (Carlota, 25 Nov); the tick marks done
+  const columns = 4 + page.fields.length;
   // A Total row under each section (and one for all of them) once the project
   // has a number or money field; refreshTotals() fills the amounts
   const summed = page.fields.some(f => SUMMED.includes(f.type));
   const totalRow = (label, cls = '') => `
     <tr class="task-section-total ${cls}" data-placeholder>
-      <td></td><td colspan="4">${esc(label)}</td>
+      <td></td><td colspan="3">${esc(label)}</td>
       ${page.fields.map(f => `<td class="num field-total" ${SUMMED.includes(f.type) ? `data-total="${esc(f.id)}"` : ''}></td>`).join('')}
     </tr>`;
   const withTasks = groups.filter(g => g.tasks.length).length;
@@ -753,7 +753,7 @@ function drawList(page, container, main, subtasksOf) {
     <div class="table-wrap">
       <table class="table task-table">
         <thead>
-          <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th>Task</th><th>Assignee</th><th>Due</th><th>Status</th>${page.fields.map(f => `<th class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}">${esc(f.name)}</th>`).join('')}</tr>
+          <tr><th class="tick-col"><span class="visually-hidden">Done</span></th><th>Task</th><th>Assignee</th><th>Due</th>${page.fields.map(f => `<th class="field-col ${['number', 'money'].includes(f.type) ? 'num' : ''}">${esc(f.name)}</th>`).join('')}</tr>
         </thead>
         ${groups.map((g, i) => `
           <tbody data-group="${esc(g.id)}" class="${closed.has(key(g)) ? 'is-closed' : ''}">
@@ -852,7 +852,6 @@ function drawList(page, container, main, subtasksOf) {
     });
     row.querySelector('[data-done]').addEventListener('change', event =>
       setStatus(page, task, event.target.checked ? 'done' : 'todo'));
-    row.querySelector('[data-status]').addEventListener('change', event => setStatus(page, task, event.target.value));
   });
 }
 

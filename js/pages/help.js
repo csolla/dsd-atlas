@@ -108,7 +108,7 @@ const SECTIONS = [
         <li>Open the project and type a title in <strong>Add a task and press Enter</strong>. It goes to To do.</li>
         <li>Every project has four views, switched at the top right of its tasks. It opens on <strong>List</strong> the first time, then on whichever view you used last.
           <ul>
-            <li><strong>List</strong>: a table, grouped by section. Click ▾ next to a section's name to close or open it (Atlas remembers this for each project), or use <strong>Collapse all</strong> / <strong>Expand all</strong>. While you search or filter, every section opens so nothing is hidden.</li>
+            <li><strong>List</strong>: a table, grouped by section, with a tick to mark each task done (to change a task to In progress or In review, use Kanban or its side panel). Click ▾ next to a section's name to close or open it (Atlas remembers this for each project), or use <strong>Collapse all</strong> / <strong>Expand all</strong>. While you search or filter, every section opens so nothing is hidden.</li>
             <li><strong>Kanban</strong>: columns To do, In progress, In review and Done. Drag cards between them, and up or down to reorder.</li>
             <li><strong>Board</strong>: one column per section. Each card shows its status. Drag a card to another column to change its section.</li>
             <li><strong>Calendar</strong>: one month at a time, each task on its due date. Use ‹ and › to change month. Drag a task to another day to change its due date, or click <strong>+</strong> on a day to add a task due that day. Tasks without a due date only show in the other views.</li>
