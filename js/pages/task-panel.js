@@ -127,9 +127,7 @@ function render() {
   const { panel, task } = current;
   panel.innerHTML = `
     <header class="panel-header">
-      <a class="panel-campaign" href="#/campaigns/${esc(task.campaign.id)}">
-        ${forTag(task.campaign)} <span>${esc(task.campaign.name)}</span>
-      </a>
+      <button class="btn btn-small complete-btn" type="button" data-complete aria-pressed="false">✓ Mark complete</button>
       <div class="panel-actions">
         ${task.asana_url ? `<a class="btn btn-small btn-ghost" href="${esc(task.asana_url)}" target="_blank" rel="noopener" title="This task was imported from Asana: see the original, with its full history">Open in Asana</a>` : ''}
         <button class="btn btn-small btn-ghost" type="button" data-copy-link title="Copy a link to this task">Copy link</button>
@@ -139,9 +137,6 @@ function render() {
       </div>
     </header>
     <div class="panel-body">
-      <div class="panel-complete-row">
-        <button class="btn btn-small complete-btn" type="button" data-complete aria-pressed="false">✓ Mark complete</button>
-      </div>
       <input class="panel-title" data-field="title" aria-label="Task title" maxlength="300">
       <div class="panel-props">
         <div class="prop-row"><label class="prop-label" for="tp-assignee">Assignee</label>
@@ -150,7 +145,7 @@ function render() {
           <div class="prop-value"><input id="tp-due" type="date" data-field="due_date"></div></div>
         <div class="prop-row"><span class="prop-label">Project</span>
           <div class="prop-value prop-project">
-            <a href="#/campaigns/${esc(task.campaign.id)}">${esc(task.campaign.name)}</a>
+            <a href="#/campaigns/${esc(task.campaign.id)}">${esc(task.campaign.name)}</a> ${forTag(task.campaign)}
             <span data-section-field hidden><select data-field="section_id" aria-label="Section"></select></span>
           </div></div>
         <div class="prop-row"><label class="prop-label" for="tp-status">Status</label>
