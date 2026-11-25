@@ -111,6 +111,7 @@ export async function renderCampaign(el, id, openTask = null) {
               <div class="menu">
                 ${campaign.is_template ? '' : '<button class="menu-item" type="button" data-save-template>Save as template</button>'}
                 <button class="menu-item" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>
+                ${isAdmin() ? '<button class="menu-item menu-item-danger" type="button" data-delete title="Delete the project and its tasks for everyone">Delete project…</button>' : ''}
               </div>
             </details>` : ''}
         </div>`}
@@ -131,11 +132,6 @@ export async function renderCampaign(el, id, openTask = null) {
           ${campaign.asana_url ? `<a href="${esc(campaign.asana_url)}" target="_blank" rel="noopener" title="Imported from Asana: older and finished work stays there">Open in Asana ↗</a>` : ''}
         </div>
         ${campaign.description ? `<p class="description">${esc(campaign.description)}</p>` : '<p class="muted">No description.</p>'}
-        ${isAdmin() ? `
-          <div class="details-actions">
-            <button class="btn btn-small btn-danger-outline" type="button" data-delete hidden>Delete project</button>
-            <span class="muted small" data-delete-note hidden>This project has hours logged, so it can't be deleted. Set it to Done or On hold instead.</span>
-          </div>` : ''}
       </div>`}
     </section>
     <section class="tasks-section">
@@ -307,10 +303,15 @@ async function loadHours(page) {
   el.querySelector('[data-hours]').innerHTML = `
     <span class="stat-value">${pct == null ? '' : meter(pct, level)}
       <span class="${level === 'critical' ? 'over-plan' : ''}">${fmtHours(hours)}</span>${planned ? ` <span class="muted">of ${fmtHours(planned)}</span>` : ''}</span>`;
+  // A project with hours logged can't be deleted (the hours must stay for the
+  // budgets): its Delete says so and points to Archive
   const remove = el.querySelector('[data-delete]');
   if (remove) {
-    remove.hidden = hours > 0;
-    el.querySelector('[data-delete-note]').hidden = hours === 0;
+    remove.disabled = hours > 0;
+    remove.title = hours > 0
+      ? `It has ${fmtHours(hours)} logged, which must stay for the budgets. Archive it instead.`
+      : 'Delete the project and its tasks for everyone';
+    remove.textContent = hours > 0 ? 'Delete project (has hours, archive instead)' : 'Delete project…';
   }
 }
 

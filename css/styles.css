@@ -401,6 +401,8 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
   cursor: pointer;
 }
 .menu-item:hover { background: var(--surface-2); }
+.menu-item-danger { color: var(--danger); }
+.menu-item:disabled { color: var(--muted); cursor: not-allowed; background: none; }
 
 /* Page layout -------------------------------------------------------------- */
 
