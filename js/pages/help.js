@@ -102,7 +102,7 @@ const SECTIONS = [
         <li>Fill in name, description, department, who it's for, status, dates, owner and planned hours. Department starts as yours.</li>
         <li>Click <strong>Create project</strong>. To change it later, open it and click <strong>Edit</strong>.</li>
       </ol>
-      <p>Use the filters and the search box on the Projects page to find a project. Hours logged turn red when they pass the planned hours.</p>
+      <p>Use the tabs (Active, Done &amp; on hold, All, Archived, Templates), the search box and the filters (including <strong>Only mine</strong>) on the Projects page to find a project. On a computer the list scrolls inside its box, so the column names stay at the top; click one to sort by it. Hours logged turn red when they pass the planned hours.</p>
       <h3>Add and organise tasks</h3>
       <ol>
         <li>Open the project, click <strong>+ Add task</strong> above the tasks, type a title and press Enter. It goes to To do. The box stays open so you can add several in a row (you can also pick who they're for and a due date); <strong>Close</strong> or Esc hides it. Each section also has its own <strong>+ Add task</strong>.</li>

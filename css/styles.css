@@ -933,7 +933,7 @@ tbody.is-closed tr:not(.task-section-row) { display: none; }
 /* The List scrolls inside its box (height set by fitList in campaign.js), with
    the column names pinned at the top and the all-sections total at the bottom */
 .list-scroll { overflow: auto; }
-.list-scroll .task-table thead th { position: sticky; top: 0; z-index: 3; box-shadow: inset 0 -1px 0 var(--border); }
+.list-scroll thead th { position: sticky; top: 0; z-index: 3; box-shadow: inset 0 -1px 0 var(--border); }
 .list-scroll .task-table tfoot td { position: sticky; bottom: 0; z-index: 2; }
 /* Task names keep a readable width; extra field columns scroll sideways */
 .task-table .task-col { min-width: 280px; }
@@ -1246,9 +1246,12 @@ mark { background: var(--signal-soft); color: var(--text); font-weight: 650; bor
 
 /* Campaigns list ----------------------------------------------------------------- */
 
-.campaign-tabs { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
-.campaign-tabs .tabs { border-bottom: 0; margin-bottom: 0; }
-.campaign-tabs .toggle { padding-bottom: 8px; }
+/* Projects: one header line with the title, the tabs and the New buttons */
+.projects-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.projects-head h1 { padding-bottom: 6px; }
+.projects-head .tabs { border-bottom: 0; margin-bottom: 0; align-self: flex-end; }
+.projects-head .page-actions { padding-bottom: 8px; }
+.filters .toggle { padding: 0 6px; }
 button.tab { background: none; border: 0; border-bottom: 2px solid transparent; font: inherit; cursor: pointer; }
 .tab-count { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 12px; text-align: center; }
 .tab.active .tab-count { background: var(--accent-soft); color: var(--accent); }
@@ -1256,9 +1259,12 @@ button.tab { background: none; border: 0; border-bottom: 2px solid transparent; 
 .sort-btn:hover { color: var(--text); }
 th[aria-sort="ascending"] .sort-btn, th[aria-sort="descending"] .sort-btn { color: var(--text); }
 .campaign-table tr.clickable { cursor: pointer; }
-.campaign-link { display: block; font-size: 15px; }
-.campaign-table .unit-line { margin-top: 2px; }
-.ended-flag { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: var(--signal-soft); color: var(--signal-ink); font-size: 12px; font-weight: 600; }
+.campaign-link { font-size: 15px; }
+/* Name, department, Private and Ended on one line (wrapping only if long) */
+.project-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; }
+.campaign-table td { padding-top: 7px; padding-bottom: 7px; }
+.campaign-table thead th:first-child { width: 42%; }
+.ended-flag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--signal-soft); color: var(--signal-ink); font-size: 12px; font-weight: 600; }
 .meter-head { min-width: 160px; }
 .meter-cell { white-space: nowrap; }
 .meter-cell .mini-meter { width: 70px; }
@@ -1493,13 +1499,14 @@ button.cal-off:hover { box-shadow: inset 0 0 0 2px var(--text); }
   .campaign-table, .campaign-table tbody { display: block; }
   .campaign-table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
   .campaign-table td { display: block; padding: 0; border: 0; }
-  .campaign-table td[data-label="Campaign"] { grid-column: 1 / -1; }
+  .campaign-table td[data-label="Project"] { grid-column: 1 / -1; }
   .campaign-table td[data-label="Owner"], .campaign-table td[data-label="Dates"] { font-size: 13px; }
   .campaign-table td[data-label="Hours"]::before, .campaign-table td[data-label="Tasks done"]::before {
     content: attr(data-label); display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px;
   }
   .campaign-table tbody tr:hover { background: transparent; }
-  .campaign-tabs .tab { padding: 8px 10px; }
+  .projects-head .tab { padding: 8px 10px; }
+  .projects-head .tabs { flex-basis: 100%; overflow-x: auto; }
   .help-toc { position: static; }
   .time-controls { gap: 10px; }
   .week-nav strong { width: 100%; margin: 4px 0 0; }

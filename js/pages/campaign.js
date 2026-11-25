@@ -9,7 +9,7 @@ import {
 } from '../tasks.js';
 import {
   esc, options, statusPill, avatar, fmtCompactRange, fmtDate, fmtHours, toast, errorMessage,
-  confirmDialog, formDialog, TASK_STATUSES,
+  confirmDialog, formDialog, TASK_STATUSES, fitToScreen,
 } from '../ui.js';
 import { unitLine } from '../departments.js';
 import { loadAccess, projectAudience, accessNames } from '../access.js';
@@ -763,10 +763,7 @@ const FOLD_ICONS = {
 function fitList(page) {
   const scroller = page.el.querySelector('.list-scroll');
   if (!scroller) return;
-  if (window.matchMedia('(max-width: 720px)').matches) { scroller.style.maxHeight = ''; return; }
-  const top = scroller.getBoundingClientRect().top + window.scrollY;
-  const after = scroller.parentElement.querySelector('.task-section-new')?.offsetHeight || 0;
-  scroller.style.maxHeight = `${Math.max(360, window.innerHeight - top - after - 24)}px`;
+  fitToScreen(scroller, scroller.parentElement.querySelector('.task-section-new')?.offsetHeight || 0);
   if (!page.fitting) {
     page.fitting = () => (page.el.isConnected ? fitList(page) : window.removeEventListener('resize', page.fitting));
     window.addEventListener('resize', page.fitting);

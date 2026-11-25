@@ -6,7 +6,7 @@ import { loadCampaignHours } from '../time.js';
 import { loadTeamSettings } from '../capacity.js';
 import {
   esc, options, statusPill, avatar, fmtHours, fmtCompactRange, toast, errorMessage, formDialog,
-  CAMPAIGN_STATUSES,
+  CAMPAIGN_STATUSES, fitToScreen,
 } from '../ui.js';
 import {
   BUSINESS_UNITS, FOR_BOTH, departmentById, departmentByKey, isMarketing, unitLine,
@@ -33,18 +33,19 @@ async function loadTaskProgress() {
   return Object.fromEntries(Object.entries(byCampaign).map(([id, tasks]) => [id, tasksDonePct(tasks)]));
 }
 
+// One header line (title, tabs, New template / New project), the filters,
+// then the table, which fills the screen with its column names pinned
+// (Carlota, 25 Nov)
 export async function renderCampaigns(el) {
   const owners = state.people.filter(p => p.active && p.role !== 'director');
   el.innerHTML = `
-    <div class="page-header">
+    <div class="projects-head">
       <h1>Projects</h1>
+      <nav class="tabs" aria-label="Which projects" data-views></nav>
+      <span class="spacer"></span>
       ${canEditWork() ? `<div class="page-actions">
         <button class="btn" type="button" data-new-template>New template</button>
         <button class="btn btn-primary" type="button" data-new>New project</button></div>` : ''}
-    </div>
-    <div class="campaign-tabs">
-      <nav class="tabs" aria-label="Which projects" data-views></nav>
-      <label class="toggle"><input type="checkbox" data-mine ${filters.mine ? 'checked' : ''}> Only mine</label>
     </div>
     <div class="filters">
       <input class="search" type="search" placeholder="Search projects" aria-label="Search projects" value="${esc(filters.search)}">
@@ -57,6 +58,7 @@ export async function renderCampaigns(el) {
       <select data-filter="owner" aria-label="Owner">
         <option value="">All owners</option>${options(Object.fromEntries(owners.map(p => [p.id, p.name])), filters.owner)}
       </select>
+      <label class="toggle"><input type="checkbox" data-mine ${filters.mine ? 'checked' : ''}> Only mine</label>
       <button class="btn btn-ghost" type="button" data-clear>Clear</button>
     </div>
     <div data-list><p class="muted">Loading projects…</p></div>`;
@@ -107,6 +109,12 @@ export async function renderCampaigns(el) {
     draw();
   });
   draw();
+  const refit = () => (el.isConnected ? fitTable(list) : window.removeEventListener('resize', refit));
+  window.addEventListener('resize', refit);
+}
+
+function fitTable(list) {
+  fitToScreen(list.querySelector('.list-scroll'), list.querySelector('.table-note')?.offsetHeight || 0);
 }
 
 // Everything except the Active / Done / All tab
@@ -199,8 +207,11 @@ function drawList(list, data, draw) {
       <button type="button" class="sort-btn" data-sort="${sortKey}">${label} <span aria-hidden="true">${arrow}</span></button></th>`;
   };
 
+  // Keep the reader's place when the list redraws (a live update, a sort)
+  const before = list.querySelector('.list-scroll');
+  const place = before ? [before.scrollTop, before.scrollLeft] : null;
   list.innerHTML = `
-    <div class="table-wrap">
+    <div class="table-wrap list-scroll">
       <table class="table campaign-table">
         <thead>
           <tr>
@@ -214,12 +225,12 @@ function drawList(list, data, draw) {
             const hoursLevel = c.hoursPct == null ? 'none' : c.hoursPct > 100 ? 'critical' : c.hoursPct >= 80 ? 'warning' : 'good';
             return `
               <tr class="clickable" data-href="#/campaigns/${esc(c.id)}">
-                <td data-label="Project">
+                <td data-label="Project"><div class="project-cell">
                   <a class="row-link campaign-link" href="#/campaigns/${esc(c.id)}">${esc(c.name)}</a>
                   ${unitLine(c)}
                   ${c.private ? '<span class="private-flag"><span aria-hidden="true">🔒</span> Private</span>' : ''}
                   ${c.is_template ? '<span class="template-flag">Template</span>' : endedFlag(c)}
-                </td>
+                </div></td>
                 <td data-label="Owner">${owner ? `<span class="person">${avatar(owner, 24)}${esc(owner.name)}</span>` : '<span class="muted">—</span>'}</td>
                 <td data-label="Dates" class="nowrap">${esc(fmtCompactRange(c.start_date, c.end_date))}</td>
                 <td data-label="Status">${statusPill(c.status)}</td>
@@ -236,6 +247,9 @@ function drawList(list, data, draw) {
       </table>
     </div>
     <p class="muted small table-note">${shown.length} project${shown.length === 1 ? '' : 's'}. Bars turn amber at 80% of planned hours and red over plan.</p>`;
+  fitTable(list);
+  const scroller = list.querySelector('.list-scroll');
+  if (place) [scroller.scrollTop, scroller.scrollLeft] = place;
 
   list.querySelectorAll('[data-sort]').forEach(button => button.addEventListener('click', () => {
     if (filters.sort === button.dataset.sort) filters.dir = filters.dir === 'asc' ? 'desc' : 'asc';

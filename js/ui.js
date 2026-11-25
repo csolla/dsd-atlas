@@ -196,3 +196,13 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm', danger
     dialog.addEventListener('close', () => resolve(confirmed));
   });
 }
+
+// A table box that fills the rest of the screen and scrolls inside
+// (.list-scroll), so its column names (a sticky thead) stay in view.
+// below: room to leave under it. Phones scroll the whole page instead.
+export function fitToScreen(scroller, below = 0) {
+  if (!scroller) return;
+  if (window.matchMedia('(max-width: 720px)').matches) { scroller.style.maxHeight = ''; return; }
+  const top = scroller.getBoundingClientRect().top + window.scrollY;
+  scroller.style.maxHeight = `${Math.max(360, window.innerHeight - top - below - 24)}px`;
+}
