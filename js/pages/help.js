@@ -138,6 +138,17 @@ const SECTIONS = [
       </ul>`,
   },
   {
+    id: 'forms',
+    title: 'Forms: asking another team for something',
+    html: `
+      <ul>
+        <li><a href="#/forms">Forms</a> in the menu lists every form at DSD. Open one, answer the questions and click <strong>Send</strong>: your request becomes a task in that team's project, and the person it's assigned to is notified. You don't need access to the project.</li>
+        <li><strong>Making a form</strong> (project editors): on the project page, click <strong>Forms</strong>, then <strong>+ New form</strong>. Give it a name and an introduction, choose the section new requests land in and who they're assigned to, and write the questions. The first question always becomes the task's title. Each other question's answer can go to one of the project's fields (with its choices), to the due date, or into the description, and can be required.</li>
+        <li><strong>Who sent it:</strong> if the project has a person field such as "Requestor", the form can fill it with whoever sent it. Every task sent by a form also says who sent it and when.</li>
+        <li><strong>Sharing:</strong> each form has its own link (<strong>Copy link</strong>). Untick <strong>Open</strong> to stop a form without deleting it.</li>
+      </ul>`,
+  },
+  {
     id: 'search',
     title: 'Searching everything',
     html: `

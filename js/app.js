@@ -16,6 +16,7 @@ import { renderProfile } from './pages/profile.js';
 import { renderDashboards } from './pages/dashboards.js';
 import { renderHelp } from './pages/help.js';
 import { renderSearch, searchHref } from './pages/search.js';
+import { renderForms, renderForm } from './pages/forms.js';
 import { mountSearchSuggestions } from './search-suggest.js';
 
 const ALL = ['admin', 'member', 'director'];
@@ -30,6 +31,8 @@ const ROUTES = [
   // A shared task link: the campaign with that task open
   { path: /^\/campaigns\/([0-9a-f-]{36})\/tasks\/([0-9a-f-]{36})$/, roles: WORK, nav: 'campaigns', render: (el, id, task) => renderCampaign(el, id, task) },
   { path: /^\/my-time$/, roles: WORK, nav: 'my-time', render: renderMyTime },
+  { path: /^\/forms$/, roles: ALL, nav: 'forms', render: renderForms },
+  { path: /^\/forms\/([0-9a-f-]{36})$/, roles: ALL, nav: 'forms', render: (el, id) => renderForm(el, id) },
   { path: /^\/dashboards$/, roles: ALL, nav: 'dashboards', render: el => renderDashboards(el) },
   { path: /^\/dashboards\/present$/, roles: ALL, nav: 'dashboards', render: el => renderDashboards(el, { present: true }) },
   { path: /^\/capacity\/(people|departments|rules|budgets|calendar)$/, roles: ['admin'], nav: 'capacity', render: (el, section) => renderCapacityPage(el, section) },
@@ -48,6 +51,7 @@ const NAV = [
   { key: 'my-tasks', label: 'My tasks', href: '#/my-tasks', roles: WORK },
   { key: 'campaigns', label: 'Projects', href: '#/campaigns', roles: WORK },
   { key: 'my-time', label: 'My time', href: '#/my-time', roles: WORK },
+  { key: 'forms', label: 'Forms', href: '#/forms', roles: ALL },
   { key: 'dashboards', label: 'Dashboards', href: '#/dashboards', roles: ALL },
   { key: 'capacity', label: 'Capacity', href: '#/capacity/people', roles: ['admin'] },
 ];
