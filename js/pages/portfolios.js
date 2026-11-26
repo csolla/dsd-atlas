@@ -8,6 +8,7 @@ import { loadCampaignHours } from '../time.js';
 import { fieldInput, readFieldInput, formatHtml } from '../fields.js';
 import { openFieldsDialog } from '../fields-dialog.js';
 import { hasAllWords } from '../search.js';
+import { isFavourite, starButton, wireStars, onFavouritesChanged } from '../favourites.js';
 import {
   listPortfolios, getPortfolio, loadItems, loadValues, saveValue, savePortfolio, deletePortfolio, setMembers,
   addItems, removeItem, portfoliosOfProject, PORTFOLIO_FIELDS,
@@ -40,24 +41,28 @@ export async function renderPortfolios(el) {
   }
   const find = el.querySelector('[data-find]');
   const draw = () => {
-    const shown = portfolios.filter(p => !find.value.trim() || hasAllWords([p.name, p.description], find.value));
+    // Your favourites first, then A to Z
+    const shown = portfolios.filter(p => !find.value.trim() || hasAllWords([p.name, p.description], find.value))
+      .sort((a, b) => Number(isFavourite(b.id, 'portfolio')) - Number(isFavourite(a.id, 'portfolio')) || a.name.localeCompare(b.name));
     list.innerHTML = shown.length ? `
       <div class="table-wrap list-scroll"><table class="table campaign-table">
         <thead><tr><th>Portfolio</th><th>Owner</th><th>Items</th></tr></thead>
         <tbody>${shown.map(p => {
           const owner = personById(p.owner_id);
           return `<tr class="clickable" data-href="#/portfolios/${esc(p.id)}">
-            <td><div class="project-cell"><a class="row-link" href="#/portfolios/${esc(p.id)}">${esc(p.name)}</a>${p.private ? privateFlag : ''}</div></td>
+            <td><div class="project-cell">${starButton(p.id, p.name, 'portfolio')}<a class="row-link" href="#/portfolios/${esc(p.id)}">${esc(p.name)}</a>${p.private ? privateFlag : ''}</div></td>
             <td>${owner ? `<span class="person">${avatar(owner, 24)}${esc(owner.name)}</span>` : '<span class="muted">—</span>'}</td>
             <td>${p.count}</td></tr>`;
         }).join('')}</tbody></table></div>`
       : `<div class="empty-state"><p>${portfolios.length ? 'No portfolio matches.' : `No portfolios yet.${canEditWork() ? ' Create one with “New portfolio” to follow a group of projects together.' : ''}`}</p></div>`;
+    wireStars(list);
     list.querySelectorAll('tr[data-href]').forEach(row => row.addEventListener('click', event => {
       if (!event.target.closest('a, button')) window.location.hash = row.dataset.href.slice(1);
     }));
     fitToScreen(list.querySelector('.list-scroll'));
   };
   find.addEventListener('input', draw);
+  onFavouritesChanged(() => { if (el.isConnected) draw(); });
   draw();
 }
 
@@ -84,7 +89,7 @@ export async function renderPortfolio(el, id) {
       <div class="head-line">
         <div class="head-title">
           <a class="crumb" href="#/portfolios">Portfolios</a><span class="crumb-sep" aria-hidden="true">›</span>
-          <h1>${esc(portfolio.name)}</h1>
+          <h1>${esc(portfolio.name)}</h1>${starButton(portfolio.id, portfolio.name, 'portfolio')}
           ${portfolio.private ? privateFlag : ''}
           ${owner ? `<span class="person head-owner" title="Owner">${avatar(owner, 22)}${esc(owner.name)}</span>` : ''}
         </div>
@@ -106,6 +111,7 @@ export async function renderPortfolio(el, id) {
     </div>
     <div data-items><p class="muted">Loading…</p></div>`;
 
+  wireStars(el.querySelector('.project-head'));
   el.querySelector('[data-edit]')?.addEventListener('click', () => openPortfolioForm(portfolio, () => renderPortfolio(el, id)));
   el.querySelector('[data-delete]')?.addEventListener('click', async () => {
     const ok = await confirmDialog({

@@ -159,6 +159,7 @@ const SECTIONS = [
         <li><strong>Its own columns:</strong> click <strong>Fields</strong> on the portfolio to add columns such as Priority or a status of your own (with coloured choices). Fill them in right in the table.</li>
         <li><strong>Private portfolios</strong> are seen only by their owner, the people you tick and Admins. A private project in a portfolio still only shows to people who can see it.</li>
         <li>Removing a project (×) only takes it out of the portfolio; the project isn't touched.</li>
+        <li><strong>Favourites:</strong> click ☆ next to a portfolio's name to star it, like projects. Starred portfolios come first on the Portfolios page and in the <strong>★</strong> menu in the top bar.</li>
       </ul>`,
   },
   {
