@@ -402,6 +402,11 @@ input:focus, select:focus, textarea:focus { outline: 3px solid var(--focus); out
 }
 .menu-item:hover { background: var(--surface-2); }
 .menu-item-danger { color: var(--danger); }
+/* Portfolios */
+.portfolio-description { margin: -4px 0 10px; max-width: 80ch; }
+.portfolio-mark { color: var(--muted); }
+.portfolio-table td { vertical-align: middle; }
+.pick-list { display: grid; gap: 4px; max-height: 340px; overflow-y: auto; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; }
 /* Favourite projects: the star, and the ★ menu in the top bar */
 .star-btn { border: 0; background: none; padding: 0 2px; font-size: 17px; line-height: 1; color: var(--muted); cursor: pointer; flex-shrink: 0; }
 .star-btn[aria-pressed="true"] { color: var(--signal-ink); }

@@ -3,20 +3,28 @@ import {
   FIELD_TYPES, FIELD_SETS, CHOICE_COLORS, loadFields, createField, updateField, deleteField, addFieldSet, settingsFromForm,
 } from './fields.js';
 
-// The project's Fields dialog: its fields in order (move, edit, delete), a
-// button to add one, and the ready-made sets. countValues(fieldId) says how
-// many tasks have a value, for the delete warning.
-export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = () => {} } = {}) {
+// Where a Fields dialog saves: a project's task fields (the default), or a
+// portfolio's columns (js/portfolios.js passes its own store)
+const PROJECT_FIELDS = {
+  load: id => loadFields(id), create: values => createField(values), update: (id, values) => updateField(id, values),
+  remove: id => deleteField(id), ownerKey: 'campaign_id', sets: true, thing: 'task',
+  intro: 'Fields add your own information to every task in this project, such as an amount, a date or a status of your own. They show in each task\'s panel and as columns in the List view.',
+};
+
+// The Fields dialog: fields in order (move, edit, delete), a button to add
+// one, and (for projects) the ready-made sets. campaign: { id, name } of the
+// project or portfolio. countValues(fieldId) says how many rows have a
+// value, for the delete warning.
+export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = () => {}, store = PROJECT_FIELDS } = {}) {
   let fields = [];
   const dialog = formDialog({
     title: `Fields in ${campaign.name}`,
     submitLabel: 'Done',
     body: `
-      <p class="muted small">Fields add your own information to every task in this project, such as an amount, a date or a status of your own.
-        They show in each task's panel and as columns in the List view.</p>
+      <p class="muted small">${esc(store.intro)}</p>
       <div data-field-list><p class="muted">Loading fields…</p></div>
       <button class="btn btn-small" type="button" data-add-field>+ Add field</button>
-      <h3 class="fields-sets-title">Ready-made sets</h3>
+      ${store.sets ? `<h3 class="fields-sets-title">Ready-made sets</h3>
       <p class="muted small">Add a whole set in one go. Fields this project already has are skipped, and you can edit any of them afterwards.</p>
       <div class="field-sets">
         ${Object.entries(FIELD_SETS).map(([key, set]) => `
@@ -25,7 +33,7 @@ export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = 
               <span class="muted small">${esc(set.fields().map(f => f.name).join(' · '))}</span></div>
             <button class="btn btn-small" type="button" data-add-set="${esc(key)}">Add</button>
           </div>`).join('')}
-      </div>`,
+      </div>` : ''}`,
     onSubmit: () => {},
   });
   dialog.classList.add('dialog-wide');
@@ -34,7 +42,7 @@ export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = 
 
   const refresh = async () => {
     try {
-      fields = await loadFields(campaign.id);
+      fields = await store.load(campaign.id);
     } catch (error) {
       list.innerHTML = `<p class="form-error">${esc(errorMessage(error))}</p>`;
       return;
@@ -60,27 +68,27 @@ export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = 
           <button class="btn btn-ghost btn-small" type="button" data-edit>Edit</button>
           <button class="btn btn-ghost btn-small" type="button" data-delete>Delete</button>
         </li>`).join('')}
-      </ul>` : '<p class="muted">No fields yet. Add one, or add a ready-made set below.</p>';
+      </ul>` : `<p class="muted">No fields yet. Add one${store.sets ? ', or add a ready-made set below' : ''}.</p>`;
   };
 
   list.addEventListener('click', async event => {
     const button = event.target.closest('button');
     const field = fields.find(f => f.id === button?.closest('li')?.dataset.id);
     if (!field) return;
-    if (button.matches('[data-edit]')) openFieldForm(campaign, fields, field, refresh);
+    if (button.matches('[data-edit]')) openFieldForm(campaign, fields, field, refresh, store);
     if (button.matches('[data-delete]')) {
       const count = countValues(field.id);
       const ok = await confirmDialog({
         title: `Delete “${field.name}”?`,
         message: count
-          ? `It's filled in on ${count} task${count === 1 ? '' : 's'}; those values are deleted too. This can't be undone.`
-          : 'No task has a value in it yet, so nothing else changes.',
+          ? `It's filled in on ${count} ${store.thing}${count === 1 ? '' : 's'}; those values are deleted too. This can't be undone.`
+          : `No ${store.thing} has a value in it yet, so nothing else changes.`,
         confirmLabel: 'Delete field',
         danger: true,
       });
       if (!ok) return;
       try {
-        await deleteField(field.id);
+        await store.remove(field.id);
         toast('Field deleted');
       } catch (error) {
         toast(errorMessage(error), 'error');
@@ -96,7 +104,7 @@ export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = 
       fields.forEach((f, n) => { f.position = (n + 1) * 1000; });
       draw();
       try {
-        await Promise.all(changed.map(f => updateField(f.id, { position: f.position })));
+        await Promise.all(changed.map(f => store.update(f.id, { position: f.position })));
       } catch (error) {
         toast(errorMessage(error), 'error');
       }
@@ -104,7 +112,7 @@ export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = 
     }
   });
 
-  dialog.querySelector('[data-add-field]').addEventListener('click', () => openFieldForm(campaign, fields, null, refresh));
+  dialog.querySelector('[data-add-field]').addEventListener('click', () => openFieldForm(campaign, fields, null, refresh, store));
   dialog.querySelectorAll('[data-add-set]').forEach(button => button.addEventListener('click', async () => {
     const set = FIELD_SETS[button.dataset.addSet];
     button.disabled = true;
@@ -123,7 +131,7 @@ export function openFieldsDialog(campaign, { countValues = () => 0, onChanged = 
 }
 
 // Add or edit one field. The type is fixed once a field exists.
-function openFieldForm(campaign, fields, field, onSaved) {
+function openFieldForm(campaign, fields, field, onSaved, store = PROJECT_FIELDS) {
   const lines = list => esc((list || []).join('\n'));
   const dialog = formDialog({
     title: field ? `Edit “${field.name}”` : 'Add field',
@@ -154,10 +162,10 @@ function openFieldForm(campaign, fields, field, onSaved) {
       const settings = settingsFromForm(type, form);
       if ((type === 'choice' || type === 'multi') && !settings.options.length) return 'Add at least one choice.';
       try {
-        if (field) await updateField(field.id, { name, settings });
+        if (field) await store.update(field.id, { name, settings });
         else {
           const last = Math.max(0, ...fields.map(f => f.position));
-          await createField({ campaign_id: campaign.id, name, type, settings, position: last + 1000 });
+          await store.create({ [store.ownerKey]: campaign.id, name, type, settings, position: last + 1000 });
         }
       } catch (error) {
         return errorMessage(error);

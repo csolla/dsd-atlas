@@ -150,6 +150,18 @@ const SECTIONS = [
       </ul>`,
   },
   {
+    id: 'portfolios',
+    title: 'Portfolios: follow a group of projects',
+    html: `
+      <ul>
+        <li><a href="#/portfolios">Portfolios</a> in the menu lists them. A portfolio groups projects (and other portfolios) so you can follow them together: each row shows the project's status, owner, dates, tasks done and hours.</li>
+        <li><strong>Making one:</strong> click <strong>New portfolio</strong>, give it a name and an owner, then <strong>+ Add project</strong> or <strong>+ Add portfolio</strong>. From a project, its <strong>⋯</strong> menu has <strong>Add to portfolio…</strong>.</li>
+        <li><strong>Its own columns:</strong> click <strong>Fields</strong> on the portfolio to add columns such as Priority or a status of your own (with coloured choices). Fill them in right in the table.</li>
+        <li><strong>Private portfolios</strong> are seen only by their owner, the people you tick and Admins. A private project in a portfolio still only shows to people who can see it.</li>
+        <li>Removing a project (×) only takes it out of the portfolio; the project isn't touched.</li>
+      </ul>`,
+  },
+  {
     id: 'rules',
     title: 'Rules: let Atlas do routine work',
     html: `

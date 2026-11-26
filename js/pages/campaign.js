@@ -22,6 +22,7 @@ import { openRulesDialog } from '../rules-dialog.js';
 import { hasAllWords } from '../search.js';
 import { startTimer } from '../timer.js';
 import { starButton, wireStars } from '../favourites.js';
+import { openProjectPortfolios } from './portfolios.js';
 
 const DONE_SHOWN = 10;
 
@@ -111,6 +112,7 @@ export async function renderCampaign(el, id, openTask = null) {
               <summary class="btn btn-ghost btn-small" aria-label="More project actions" title="More">⋯</summary>
               <div class="menu">
                 ${campaign.is_template ? '' : '<button class="menu-item" type="button" data-save-template>Save as template</button>'}
+                ${campaign.is_template ? '' : '<button class="menu-item" type="button" data-portfolios>Add to portfolio…</button>'}
                 <button class="menu-item" type="button" data-archive>${campaign.archived_at ? 'Unarchive' : 'Archive'}</button>
                 ${isAdmin() ? '<button class="menu-item menu-item-danger" type="button" data-delete title="Delete the project and its tasks for everyone">Delete project…</button>' : ''}
               </div>
@@ -187,6 +189,7 @@ export async function renderCampaign(el, id, openTask = null) {
   el.querySelector('[data-edit]')?.addEventListener('click', () =>
     openCampaignForm(campaign, () => renderCampaign(el, id)));
   el.querySelector('[data-delete]')?.addEventListener('click', () => deleteCampaign(page));
+  el.querySelector('[data-portfolios]')?.addEventListener('click', () => openProjectPortfolios(campaign));
   el.querySelector('[data-archive]')?.addEventListener('click', () => toggleArchived(page, () => renderCampaign(el, id)));
   el.querySelector('[data-use-template]')?.addEventListener('click', () =>
     openCampaignForm(null, saved => { window.location.hash = `/campaigns/${saved.id}`; }, { templateId: campaign.id }));
