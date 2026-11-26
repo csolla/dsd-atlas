@@ -24,6 +24,8 @@ import { closeTaskPanel } from './pages/task-panel.js';
 
 const ALL = ['admin', 'member', 'director'];
 const WORK = ['admin', 'member'];
+// Dashboards: Admins and directors only, not team members (Carlota, 26 Nov)
+const LEADS = ['admin', 'director'];
 
 // Each page, who can open it, and the nav item it belongs to
 const ROUTES = [
@@ -39,8 +41,8 @@ const ROUTES = [
   { path: /^\/portfolios\/([0-9a-f-]{36})$/, roles: ALL, nav: 'portfolios', render: (el, id) => renderPortfolio(el, id) },
   { path: /^\/forms$/, roles: ALL, nav: 'forms', render: renderForms },
   { path: /^\/forms\/([0-9a-f-]{36})$/, roles: ALL, nav: 'forms', render: (el, id) => renderForm(el, id) },
-  { path: /^\/dashboards$/, roles: ALL, nav: 'dashboards', render: el => renderDashboards(el) },
-  { path: /^\/dashboards\/present$/, roles: ALL, nav: 'dashboards', render: el => renderDashboards(el, { present: true }) },
+  { path: /^\/dashboards$/, roles: LEADS, nav: 'dashboards', render: el => renderDashboards(el) },
+  { path: /^\/dashboards\/present$/, roles: LEADS, nav: 'dashboards', render: el => renderDashboards(el, { present: true }) },
   { path: /^\/capacity\/(people|departments|rules|budgets|calendar)$/, roles: ['admin'], nav: 'capacity', render: (el, section) => renderCapacityPage(el, section) },
   { path: /^\/capacity$/, roles: ['admin'], redirect: '/capacity/people' },
   { path: /^\/design-system$/, roles: ['admin'], nav: null, render: renderDesignSystem },
@@ -59,7 +61,7 @@ const NAV = [
   { key: 'my-time', label: 'My time', href: '#/my-time', roles: WORK },
   { key: 'portfolios', label: 'Portfolios', href: '#/portfolios', roles: ALL },
   { key: 'forms', label: 'Forms', href: '#/forms', roles: ALL },
-  { key: 'dashboards', label: 'Dashboards', href: '#/dashboards', roles: ALL },
+  { key: 'dashboards', label: 'Dashboards', href: '#/dashboards', roles: LEADS },
   { key: 'capacity', label: 'Capacity', href: '#/capacity/people', roles: ['admin'] },
 ];
 
